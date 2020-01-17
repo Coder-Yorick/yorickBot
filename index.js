@@ -14,6 +14,7 @@ const Translate = require('./Translate.js');
 const KeepHerokuAlive = require('./KeepHerokuAlive.js');
 const YRedis = require('./YRedis.js');
 const LineNotify = require('./LineNotify.js');
+const QuerySnow = require('./QuerySnow.js');
 
 /* linebot setting*/
 const bot = linebot({
@@ -200,6 +201,9 @@ const InterpretMessage = function (text, source) {
                 callback(success ? '發送成功!' : '發送失敗!');
             });
         };
+    } else if (text == '雪' || text == '滑雪') {
+        /* 雪況查詢 */
+        return callback => QuerySnowOperate(userID, GVars.UserStorage[userID], null, callback);
     } else if (GVars.UserStorage.hasOwnProperty(userID)) {
         /* 功能模式已啟動*/
         return callback => MenuFunction(userID, text, callback);
@@ -399,4 +403,11 @@ const TranslateOperate = function(userid, storage, text, callback) {
             callback(results);
         });
     }
+}
+
+/* 雪況查詢-執行*/
+const QuerySnowOperate = function(userid, storage, text, callback) {
+    QuerySnow.GetSnowDepth('岩原', results => {
+        callback(results);
+    });
 }
