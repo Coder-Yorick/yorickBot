@@ -31,8 +31,7 @@ YRedis.Initial(ENV.REDIS.REDIS_HOST, ENV.REDIS.REDIS_PORT, ENV.REDIS.REDIS_PWD);
 
 /* global variables*/
 var GVars = {
-    UserStorage: {},
-    Observer: null
+    UserStorage: {}
 };
 
 bot.on('message', function (event) {
@@ -65,9 +64,6 @@ bot.on('message', function (event) {
             event.reply('Unknow message: ' + JSON.stringify(event));
             break;
     }
-    /* 監看特別人發話*/
-    if (GVars.Observer != null)
-        GVars.Observer.Check(event);
 });
 
 bot.on('postback', function (event) {
@@ -126,8 +122,6 @@ app.listen(SERVER_PORT || 80, function () {
             packageId: 2,
             stickerId: 144
         }]);
-        /* 啟動監看特定人回應訊息*/
-        GVars.Observer = new Observer();
     } catch (e) {
         console.log(e.message);
     }
@@ -195,14 +189,6 @@ const InterpretMessage = function (text, source) {
         return callback => callback('你的UserID:' + userID);
     } else if (text.toUpperCase().indexOf('RESETREDIS') == 0) {
         return callback => YRedis.ClearDB(result => callback(result ? 'Redis清除成功' : 'Redis清除失敗'));
-    } else if (text == '@') {
-        /* 轉傳訊息功能*/
-        GVars.UserStorage[userID] = {
-            mode: GConst.USERMode.MESSAGE2,
-            type: '',
-            item: ''
-        };
-        return callback => callback(new MenuTemplate(GConst.USERMode.MESSAGE2));
     } else if (text.toUpperCase().indexOf('LIFF') == 0) {
         /* LIFF 網頁*/
         return callback => callback(GConst.MYLIFFURL);
@@ -255,9 +241,6 @@ const InterpretPostback = function (data, userID) {
                 return callback => ForexOperate(userID, GVars.UserStorage[userID], data, callback);
             }
             break;
-        case GConst.USERMode.MESSAGE2:
-            GVars.UserStorage[userID].type = data;
-            return callback => Message2SomeoneOperate(userID, GVars.UserStorage[userID], null, callback);
         default:
             break;
     }
@@ -277,9 +260,6 @@ const MenuFunction = function (userID, text, callback) {
             break;
         case GConst.USERMode.TRANSLATE:
             TranslateOperate(userID, GVars.UserStorage[userID], text, callback)
-            break;
-        case GConst.USERMode.MESSAGE2:
-            Message2SomeoneOperate(userID, GVars.UserStorage[userID], text, callback)
             break;
     }
 }
@@ -304,13 +284,6 @@ const MenuTemplate = function (USERMode) {
             template = new LineItem.Template('查詢匯率', '要查詢哪種匯率資訊呢');
             template.template.actions.push(new LineItem.TemplateAction('臺銀即期匯率', GConst.USERModeType.QUERY));
             template.template.actions.push(new LineItem.TemplateAction('近一個月匯率走勢', GConst.USERModeType.QUERY1));
-            break;
-        case GConst.USERMode.MESSAGE2:
-            template = new LineItem.Template('隱藏功能', '要我幫你傳訊息給誰?');
-            template.template.actions.push(new LineItem.TemplateAction('奇', GConst.DEVELOPERID));
-            template.template.actions.push(new LineItem.TemplateAction('儒', GConst.TESTERIDS.Sister));
-            template.template.actions.push(new LineItem.TemplateAction('雯', GConst.TESTERIDS.Mother));
-            template.template.actions.push(new LineItem.TemplateAction('煌', GConst.TESTERIDS.Father));
             break;
     }
     return template;
@@ -358,7 +331,6 @@ const AQIOperate = function(userid, storage, text, callback) {
         }
     });
 }
-
 
 /* 天氣查詢-執行*/
 const WeatherOperate = function (userid, storage, text, callback) {
@@ -427,71 +399,4 @@ const TranslateOperate = function(userid, storage, text, callback) {
             callback(results);
         });
     }
-}
-
-/* 轉傳訊息功能-執行*/
-const Message2SomeoneOperate = function(userid, storage, text, callback) {
-    if (text == null) {
-        callback('要幫你傳什麼訊息呢?');
-    } else {
-        let who = storage.type;
-        delete GVars.UserStorage[userid];
-        try {
-            bot.push(who, [text]);
-            if (GVars.Observer.oUsers.hasOwnProperty(who))
-                GVars.Observer.oUsers[who].Live = true;
-            callback('好了~我跟他說了~');
-        } catch (e) {
-            callback('傳送失敗\n' + e.message);
-        }
-    }
-}
-
-/* 監看者*/
-const Observer = function() {
-    this.oUsers = {};
-    /* init data*/
-    for (let tname in GConst.TESTERIDS)
-        this.oUsers[GConst.TESTERIDS[tname]] = {Live: false, oSecs: 0};
-    this.oUsers[GConst.DEVELOPERID] = {Live: false, oSecs: 0};
-
-    /* 檢查監看*/
-    this.Check = event => {
-        let userID = MyLib.GetSourceUserID(event.source);
-        if (this.oUsers.hasOwnProperty(userID)) {
-            if (this.oUsers[userID].Live) {
-                let whosend = '';
-                switch (userID) {
-                    case GConst.DEVELOPERID:
-                        whosend = '奇';
-                        break;
-                    case GConst.TESTERIDS.Father:
-                        whosend = '爸';
-                        break;
-                    case GConst.TESTERIDS.Mother:
-                        whosend = '媽';
-                        break;
-                    case GConst.TESTERIDS.Sister:
-                        whosend = '妹';
-                        break;
-                }
-                bot.push(GConst.DEVELOPERID, [whosend + ' 對機器人說', event.message]);
-            }
-        }
-    }
-
-    /* 5秒常駐*/
-    this.Update = () => {
-        for (let uid in this.oUsers) {
-            if (this.oUsers[uid].Live) {
-                if (this.oUsers[uid].oSecs > 600) { /* 監看10分鐘此人對機器人的發話*/
-                    this.oUsers[uid].Live = false;
-                    this.oUsers[uid].oSecs = 0;
-                } else
-                    this.oUsers[uid].oSecs += 5;
-            }
-        }
-        setTimeout(this.Update, 5000);
-    }
-    this.Update();
 }
