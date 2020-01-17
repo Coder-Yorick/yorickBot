@@ -5,7 +5,7 @@ const SNOW_JAPAN_URL = 'https://www.snowjapan.com/japan-ski-resorts/niigata/yuza
 
 function QuerySnow() {
 
-    this.GetSnowDepth = function (ski_resort) {
+    this.GetSnowDepth = function (ski_resort, callback) {
         if (ski_resort == '岩原') {
             request(SNOW_JAPAN_URL, (err, res, body) => {
                 try {
