@@ -10,7 +10,7 @@ function QuerySnow() {
             request(SNOW_JAPAN_URL, (err, res, body) => {
                 try {
                     const $ = cheerio.load(body, { decodeEntities: false });
-                    let $snow_depth = $('div.resort-option-box-main tr:first td:eq(1)');
+                    let $snow_depth = $('div.resort-option-box-main').eq(0).find('tr').eq(0).find('td').eq(1);
                     callback($snow_depth.text());
                 } catch (e) {
                     console.log(e.message);
