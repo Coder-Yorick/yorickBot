@@ -412,6 +412,7 @@ const TranslateOperate = function(userid, storage, text, callback) {
             if (result == null) {
                 let transKind = Translate.isTWtext(text) ? 'en' : 'zh-TW';
                 Translate.exec(transKind, text, results => {
+                    YRedis.Set(text, results, r => console.log(r ? 'set redis success': 'set redis fail'));
                     callback(results);
                 });
             } else
