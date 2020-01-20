@@ -126,6 +126,16 @@ app.listen(SERVER_PORT || 80, function () {
     } catch (e) {
         console.log(e.message);
     }
+    try {
+        YRedis.Connect(result => {
+            if (result)
+                bot.push(GConst.DEVELOPERID, ['Redis connected success!']);
+            else
+                bot.push(GConst.DEVELOPERID, ['Redis connected fail!']);
+        });
+    } catch (ex) {
+        console.log(ex.message);
+    }
 });
 
 /* 解譯輸入文字*/
@@ -398,9 +408,14 @@ const TranslateOperate = function(userid, storage, text, callback) {
         callback('請輸入要翻譯的文字是什麼?');
     } else {
         delete GVars.UserStorage[userid];
-        let transKind = Translate.isTWtext(text) ? 'en' : 'zh-TW';
-        Translate.exec(transKind, text, results => {
-            callback(results);
+        YRedis.GetStr(text, result => {
+            if (result == null) {
+                let transKind = Translate.isTWtext(text) ? 'en' : 'zh-TW';
+                Translate.exec(transKind, text, results => {
+                    callback(results);
+                });
+            } else
+                callback(result);
         });
     }
 }
