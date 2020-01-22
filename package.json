@@ -2,6 +2,9 @@
   "name": "node-js-line-bot",
   "version": "0.1.0",
   "description": "A Node.js linebot app",
+  "scripts": {
+    "start": "node index.js"
+  },
   "engines": {
     "node": "8.9.1"
   },
