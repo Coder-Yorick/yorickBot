@@ -1,5 +1,5 @@
 function Scheduler() {
-    this.durationSecs = 86400 * 1000 / 24 / 60; /* half day */
+    this.durationSecs = 86400 * 1000 / 2; /* half day */
     this.timer = null;
     this.running = false;
     this.events = {};
@@ -64,10 +64,12 @@ function Scheduler() {
                 func: () => {
                     stockIDs.map(stockID => {
                         yRedis.GetObj(`stock-${stockID}`, null, stockInfo => {
-                            let msg = `${stockInfo.name}\n`;
-                            msg += `現價: ${stockInfo.price}\n`;
-                            msg += `異動: ${stockInfo.spread}`;
-                            publishFunc(observer, [msg]);
+                            if (stockInfo) {
+                                let msg = `${stockInfo.name}\n`;
+                                msg += `現價: ${stockInfo.price}\n`;
+                                msg += `異動: ${stockInfo.spread}`;
+                                publishFunc(observer, [msg]);
+                            }
                         });
                     });
                 }

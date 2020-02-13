@@ -29,14 +29,14 @@ function Stock() {
         request(STOCK_WEBSITE + stockID, (err, res, body) => {
             try {
                 const $ = cheerio.load(body, { decodeEntities: false });
-                let $stock_table = $('table.std_tbl > tbody > tr');
+                let $stock_table = $('table[class*=solid] > tbody > tr');
                 let $stock_detail = $('#divDetail > table > tbody tr');
                 let stock_allName = $('nobr a.link_blue[href="StockDetail.asp?STOCK_ID=' + stockID + '"]').html();
                 if ($stock_table != null && $stock_table.length > 0) {
                     let dividend_rate = '-';
                     for (let i = 0; i < $stock_detail.length; i++) {
                         if ($stock_detail.eq(i).find('td').eq(20).html() != '-') {
-                            dividend_rate = $stock_detail.eq(i).find('td').eq(20).html() * 1;
+                            dividend_rate = $stock_detail.eq(i).find('td').eq(20).html();
                             break;
                         }
                     }
