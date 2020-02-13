@@ -23,7 +23,7 @@ function Scheduler() {
             delete this.events[eventName];
     }
 
-    this.start = (sec = this.durationSecs) => {
+    this.start = (sec = 86400 / 2) => {
         if (this.running) return;
         if (sec > 0)
             this.durationSecs = sec;
