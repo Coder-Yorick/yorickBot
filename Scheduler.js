@@ -1,5 +1,5 @@
 function Scheduler() {
-    this.durationSecs = 86400 * 1000 / 2; /* half day */
+    this.durationSecs = 86400 / 2; /* half day */
     this.timer = null;
     this.running = false;
     this.events = {};
@@ -23,8 +23,10 @@ function Scheduler() {
             delete this.events[eventName];
     }
 
-    this.start = () => {
+    this.start = (sec = this.durationSecs) => {
         if (this.running) return;
+        if (sec > 0)
+            this.durationSecs = sec;
         this.running = true;
         this.timer = setInterval(() => {
             Object.values(this.events).map(function(e) {
@@ -35,7 +37,7 @@ function Scheduler() {
                     console.log(ex);
                 }
             });
-        }, this.durationSecs);
+        }, this.durationSecs * 1000);
     }
 
     this.stop = () => {

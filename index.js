@@ -230,6 +230,18 @@ const InterpretMessage = function (text, source) {
     } else if (text == '雪' || text == '滑雪') {
         /* 雪況查詢 */
         return callback => QuerySnowOperate(userID, GVars.UserStorage[userID], null, callback);
+    } else if (text.toUpperCase().indexOf('SCHEDULE') == 0) {
+        /* 排程器時間間隔設定並重啟 */
+        let setting_sec = text.toUpperCase().replace('SCHEDULE', '') * 1;
+        return callback => {
+            if (typeof setting_sec === 'number' && setting_sec >= 60) {
+                Scheduler.stop();
+                Scheduler.start(setting_sec);
+                callback(`排程重設完成! (${setting_sec}s)`);
+            } else {
+                callback(`排程重設失敗! (${setting_sec}s)`);
+            }
+        };
     } else if (GVars.UserStorage.hasOwnProperty(userID)) {
         /* 功能模式已啟動*/
         return callback => MenuFunction(userID, text, callback);
