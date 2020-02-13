@@ -136,7 +136,8 @@ app.listen(SERVER_PORT || 80, function () {
                 try {
                     Scheduler.Initial();
                     /* default events */
-                    Scheduler.getDefaultEvents(YRedis, Stock, bot.push, [GConst.DEVELOPERID], ['2520', '2545', '5880'])
+                    let publisher = (obs, msgs) => bot.push(obs, msgs);
+                    Scheduler.getDefaultEvents(YRedis, Stock, publisher, [GConst.DEVELOPERID], ['2520', '2545', '5880'])
                         .map(eventInfo => {
                             Scheduler.registerEvent(eventInfo.name, eventInfo.func);
                         }
