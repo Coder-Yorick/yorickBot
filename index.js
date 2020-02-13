@@ -7,14 +7,15 @@ const {GConst,ENV} = require('./GlobalConst.js');
 
 /* Library*/
 const MyLib = require('./MyLib.js');
+const Scheduler = require('./Scheduler.js');
 const AQI = require('./AQI.js');
 const Weather = require('./Weather.js');
 const Forex = require('./Forex.js');
 const Translate = require('./Translate.js');
-const KeepHerokuAlive = require('./KeepHerokuAlive.js');
 const YRedis = require('./YRedis.js');
 const LineNotify = require('./LineNotify.js');
 const QuerySnow = require('./QuerySnow.js');
+const Stock = require('./Stock.js');
 
 /* linebot setting*/
 const bot = linebot({
@@ -126,12 +127,27 @@ app.listen(SERVER_PORT || 80, function () {
     } catch (e) {
         console.log(e.message);
     }
+    /* Connect Redis */
     try {
         YRedis.Connect(result => {
-            if (result)
+            if (result) {
                 bot.push(GConst.DEVELOPERID, ['Redis connected success!']);
-            else
+                /* Scheduler */
+                try {
+                    Scheduler.Initial();
+                    /* default events */
+                    Scheduler.getDefaultEvents(YRedis, Stock, bot.push, [GConst.DEVELOPERID], ['2520', '2545', '5880'])
+                        .map(eventInfo => {
+                            Scheduler.registerEvent(eventInfo.name, eventInfo.func);
+                        }
+                    );
+                    Scheduler.start();
+                } catch (ex) {
+                    bot.push(GConst.DEVELOPERID, ['Scheduler startup fail!']);
+                }
+            } else {
                 bot.push(GConst.DEVELOPERID, ['Redis connected fail!']);
+            }
         });
     } catch (ex) {
         console.log(ex.message);
