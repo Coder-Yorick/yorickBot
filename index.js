@@ -137,7 +137,7 @@ app.listen(SERVER_PORT || 80, function () {
                     Scheduler.Initial();
                     /* default events */
                     let publisher = (obs, msgs) => bot.push(obs, msgs);
-                    Scheduler.getDefaultEvents(YRedis, Stock, publisher, [GConst.DEVELOPERID], ['2520', '2545', '5880'])
+                    Scheduler.getDefaultEvents(YRedis, Stock, publisher, [GConst.DEVELOPERID, GConst.TESTERIDS[0]], ['2520', '2545', '5880'])
                         .map(eventInfo => {
                             Scheduler.registerEvent(eventInfo.name, eventInfo.func);
                         }
@@ -232,13 +232,17 @@ const InterpretMessage = function (text, source) {
         /* 雪況查詢 */
         return callback => QuerySnowOperate(userID, GVars.UserStorage[userID], null, callback);
     } else if (text.toUpperCase().indexOf('SCHEDULE') == 0) {
-        /* 排程器時間間隔設定並重啟 */
+        /* 排程器時間間隔設定並重啟(0為stop) */
         let setting_sec = text.toUpperCase().replace('SCHEDULE', '') * 1;
         return callback => {
-            if (typeof setting_sec === 'number' && setting_sec >= 60) {
+            if (typeof setting_sec === 'number') {
                 Scheduler.stop();
-                Scheduler.start(setting_sec);
-                callback(`排程重設完成! (${setting_sec}s)`);
+                if (setting_sec >= 60) {
+                    Scheduler.start(setting_sec);
+                    callback(`排程重設完成! (${setting_sec}s)`);
+                } else {
+                    callback(`排程器已中止! (${setting_sec}s)`);
+                }
             } else {
                 callback(`排程重設失敗! (${setting_sec}s)`);
             }

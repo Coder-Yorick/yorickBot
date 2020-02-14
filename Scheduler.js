@@ -1,5 +1,5 @@
 function Scheduler() {
-    this.durationSecs = 86400 / 2; /* half day */
+    this.durationSecs = 86400; /* daily */
     this.timer = null;
     this.running = false;
     this.events = {};
@@ -23,7 +23,7 @@ function Scheduler() {
             delete this.events[eventName];
     }
 
-    this.start = (sec = 86400 / 2) => {
+    this.start = (sec = 86400) => {
         if (this.running) return;
         if (sec > 0)
             this.durationSecs = sec;
@@ -69,7 +69,7 @@ function Scheduler() {
                             if (stockInfo) {
                                 let msg = `${stockInfo.name}\n`;
                                 msg += `現價: ${stockInfo.price}\n`;
-                                msg += `異動: ${stockInfo.spread}`;
+                                msg += `漲跌: ${stockInfo.spread}`;
                                 publishFunc(observer, [msg]);
                             }
                         });
