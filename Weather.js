@@ -20,6 +20,30 @@ function Weather() {
         return WEATHER_CITIES;
     }
 
+    this.GetOriginData = function(city, method, callback) {
+        if (WEATHER_TW_METHOD.hasOwnProperty(method)) {
+            let propertiesObject = {
+                Authorization: WEATHER_API_KEY,
+                format: 'JSON',
+                locationName: city
+            };
+            request({ url: WEATHER_TW_URL + WEATHER_TW_METHOD[method], qs: propertiesObject }, function(err, response, body) {
+                try {
+                    if (err)
+                        callback(err);
+                    else {
+                        body = JSON.parse(body);
+                        callback(weather.ParseThirtySixWeatherInfo(city, body.records, false));
+                    }
+                } catch (e) {
+                    callback('讀取天氣資料異常\n' + e.message);
+                }
+            });
+        } else {
+            callback(null);
+        }
+    }
+
     this.GetThirtySixWeather = function(city, callback) {
         let propertiesObject = {
             Authorization: WEATHER_API_KEY,
@@ -61,7 +85,7 @@ function Weather() {
         });
     }
 
-    this.ParseThirtySixWeatherInfo = function(city, records) {
+    this.ParseThirtySixWeatherInfo = function(city, records, string_info = true) {
         if (records.hasOwnProperty('location') && records.location.length > 0) {
             for (let i in records.location) {
                 if (city == records.location[i].locationName) {
@@ -83,37 +107,55 @@ function Weather() {
                             case 'PoP':
                             	wElements[w].time.forEach(pop => {
                                     info_map._check(pop);
-                                    info_map[pop.startTime].POP = pop.parameter.parameterName + '％';
+                                    info_map[pop.startTime].POP = pop.parameter.parameterName * 1;
                                 });
                                 break;
                             case 'MinT':
                             	wElements[w].time.forEach(mint => {
                                     info_map._check(mint);
-                                    info_map[mint.startTime].MinT = mint.parameter.parameterName + '℃';
+                                    info_map[mint.startTime].MinT = mint.parameter.parameterName * 1;
                                 });
                                 break;
                             case 'MaxT':
                             	wElements[w].time.forEach(maxt => {
                                     info_map._check(maxt);
-                                    info_map[maxt.startTime].MaxT = maxt.parameter.parameterName + '℃';
+                                    info_map[maxt.startTime].MaxT = maxt.parameter.parameterName * 1;
                                 });
                                 break;
                         }
                     }
                     delete info_map['_check'];
-                    let info_str = city + '\n' + records.datasetDescription + '\n****************\n';
-                    for (let starttime in info_map) {
-                        info_str += '日期:' + starttime.slice(0, 10) + '\n';
-                    	info_str += '時間:' + starttime.slice(11,13) + '時～' + info_map[starttime].EndTime.slice(11,13) + '時\n';
-                    	info_str += '降雨機率:' + info_map[starttime].POP + '\n';
-                    	info_str += '氣溫:' + info_map[starttime].MinT + '～' + info_map[starttime].MaxT + '\n';
-                    	info_str += '\n';
+                    if (string_info) {
+                        let info_str = city + '\n' + records.datasetDescription + '\n****************\n';
+                        for (let starttime in info_map) {
+                            info_str += '日期:' + starttime.slice(0, 10) + '\n';
+                    	    info_str += '時間:' + starttime.slice(11,13) + '時～' + info_map[starttime].EndTime.slice(11,13) + '時\n';
+                    	    info_str += '降雨機率:' + info_map[starttime].POP + '％' + '\n';
+                    	    info_str += '氣溫:' + info_map[starttime].MinT + '℃' + '～' + info_map[starttime].MaxT + '℃' + '\n';
+                    	    info_str += '\n';
+                        }
+                        return info_str;
+                    } else {
+                        let infoes = []
+                        for (let starttime in info_map) {
+                            infoes.push({
+                                date: starttime.slice(0, 10),
+                                startHr: starttime.slice(11,13),
+                                endHr: info_map[starttime].EndTime.slice(11,13),
+                                pop: info_map[starttime].POP,
+                                minT: info_map[starttime].MinT,
+                                maxT: info_map[starttime].MaxT
+                            });
+                        }
+                        return infoes;
                     }
-                    return info_str;
                 }
             }
         }
-        return '查無' + city + '天氣資訊';
+        if (string_info)
+            return '查無' + city + '天氣資訊';
+        else
+            return [];
     }
 
     this.ParseOneWeekWeatherInfo = function(city, records) {

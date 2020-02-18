@@ -1,3 +1,5 @@
+const {GConst} = require('./GlobalConst.js');
+
 function Scheduler() {
     this.durationSecs = 86400; /* daily */
     this.timer = null;
@@ -48,7 +50,7 @@ function Scheduler() {
         }
     }
 
-    this.getDefaultEvents = (yRedis, stock, publishFunc, observers = [], stockIDs = ['2520', '2545', '5880']) => {
+    this.getDefaultStockEvents = (yRedis, stock, stockIDs = ['2520', '2545', '5880']) => {
         let eventInfos = [];
         stockIDs.map(stockID => {
             eventInfos.push({
@@ -60,9 +62,57 @@ function Scheduler() {
                 }
             });
         });
+        return eventInfos;
+    }
+
+    this.getDefaultWeatherEvents = (yRedis, weather) => {
+        let eventInfos = [];
+        eventInfos.push({
+            name: 'weather', 
+            func: () => {
+                let parseRecords = records => {
+                    let info = {
+                        date: null, 
+                        minT: null, 
+                        maxT: null,
+                        pop: null,
+                        nextdate_minT: null,
+                        nextdate_maxT: null,
+                        nextdate_pop: null
+                    };
+                    info.date = records.length > 0 ? records[0].date : null;
+                    records.map(record => {
+                        if (info.date === record.date && record.endHr * 1 !== 6) {
+                            info.pop = (info.pop && info.pop > record.pop) ? info.pop : record.pop;
+                            info.minT = (info.minT && info.minT < record.minT) ? info.minT : record.minT;
+                            info.maxT = (info.maxT && info.maxT > record.maxT) ? info.maxT : record.maxT;
+                        } else if (info.date !== record.date && record.startHr * 1 === 6 && record.endHr * 1 === 18) {
+                            info.nextdate_minT = record.minT;
+                            info.nextdate_maxT = record.maxT;
+                            info.nextdate_pop = record.pop;
+                        }
+                    });
+                    return info;
+                }
+                weather.GetOriginData('臺北市', 'ThirtySix', records => {
+                    yRedis.Set(`weather-taipei`, parseRecords(records), r => {});
+                });
+                weather.GetOriginData('宜蘭縣', 'ThirtySix', records => {
+                    yRedis.Set(`weather-ilan`, parseRecords(records), r => {});
+                });
+                weather.GetOriginData('新北市', 'ThirtySix', records => {
+                    yRedis.Set(`weather-newtaipei`, parseRecords(records), r => {});
+                });
+            }
+        });
+        return eventInfos;
+    }
+
+    this.getDefaultStockObserverEvents = (yRedis, publishFunc, observers = [], stockIDs = ['2520', '2545', '5880']) => {
+        let eventInfos = [];
         observers.map(observer => {
             eventInfos.push({
-                name: `line-push-${observer}`, 
+                name: `line-push-stock-${observer}`, 
                 func: () => {
                     stockIDs.map(stockID => {
                         yRedis.GetObj(`stock-${stockID}`, null, stockInfo => {
@@ -73,6 +123,58 @@ function Scheduler() {
                                 publishFunc(observer, [msg]);
                             }
                         });
+                    });
+                }
+            });
+        });
+        return eventInfos;
+    }
+
+    this.getDefaultWeatherObserverEvents = (yRedis, publishFunc) => {
+        let eventInfos = [];
+        let weatherInfoFormat = weatherInfo => {
+            let msg = `=== 天氣預報(${weatherInfo.date}) ===\n`;
+            msg += `氣溫: ${weatherInfo.minT} ～ ${weatherInfo.maxT} ℃\n`;
+            msg += `降雨: ${weatherInfo.pop}％\n`;
+            if (weatherInfo.nextdate_minT && weatherInfo.nextdate_maxT) {
+                msg += `明天: ${weatherInfo.nextdate_minT} ～ ${weatherInfo.nextdate_maxT} ℃`;
+                if (weatherInfo.nextdate_pop)
+                    msg += ` (${weatherInfo.nextdate_pop}％)`;
+            }
+            return msg;
+        }
+        [GConst.DEVELOPERID].map(observer => {
+            eventInfos.push({
+                name: `line-push-weather-${observer}`, 
+                func: () => {
+                    yRedis.GetObj('weather-taipei', null, weatherInfo => {
+                        if (weatherInfo) {
+                            publishFunc(observer, [weatherInfoFormat(weatherInfo)]);
+                        }
+                    });
+                }
+            });
+        });
+        [GConst.TESTERIDS[0], GConst.TESTERIDS[1]].map(observer => {
+            eventInfos.push({
+                name: `line-push-weather-${observer}`, 
+                func: () => {
+                    yRedis.GetObj('weather-ilan', null, weatherInfo => {
+                        if (weatherInfo) {
+                            publishFunc(observer, [weatherInfoFormat(weatherInfo)]);
+                        }
+                    });
+                }
+            });
+        });
+        [GConst.TESTERIDS[2]].map(observer => {
+            eventInfos.push({
+                name: `line-push-weather-${observer}`, 
+                func: () => {
+                    yRedis.GetObj('weather-newtaipei', null, weatherInfo => {
+                        if (weatherInfo) {
+                            publishFunc(observer, [weatherInfoFormat(weatherInfo)]);
+                        }
                     });
                 }
             });

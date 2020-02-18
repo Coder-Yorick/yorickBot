@@ -137,11 +137,14 @@ app.listen(SERVER_PORT || 80, function () {
                     Scheduler.Initial();
                     /* default events */
                     let publisher = (obs, msgs) => bot.push(obs, msgs);
-                    Scheduler.getDefaultEvents(YRedis, Stock, publisher, [GConst.DEVELOPERID, GConst.TESTERIDS[0]], ['2520', '2545', '5880'])
-                        .map(eventInfo => {
-                            Scheduler.registerEvent(eventInfo.name, eventInfo.func);
-                        }
-                    );
+                    let events = [];
+                    events = events.concat(Scheduler.getDefaultStockEvents(YRedis, Stock, ['2520', '2545', '5880']));
+                    events = events.concat(Scheduler.getDefaultWeatherEvents(YRedis, Weather));
+                    events = events.concat(Scheduler.getDefaultStockObserverEvents(YRedis, publisher, [GConst.DEVELOPERID], ['2520', '2545', '5880']));
+                    events = events.concat(Scheduler.getDefaultWeatherObserverEvents(YRedis, publisher));
+                    events.map(eventInfo => {
+                        Scheduler.registerEvent(eventInfo.name, eventInfo.func);
+                    });
                     Scheduler.start();
                 } catch (ex) {
                     bot.push(GConst.DEVELOPERID, ['Scheduler startup fail!']);
