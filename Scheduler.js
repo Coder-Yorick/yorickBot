@@ -50,6 +50,18 @@ function Scheduler() {
         }
     }
 
+    this.scheduleStart = (hour, minute = 0, timeoffset = 8) => {
+        let chk_proc = () => {
+            let now = new Date();
+            if (hour === (now.getUTCHours() + timeoffset) && minute === now.getUTCMinutes()) {
+                this.start(this.durationSecs);
+            } else {
+                setTimeout(chk_proc, 60000);
+            }
+        }
+        chk_proc();
+    }
+
     this.getDefaultStockEvents = (yRedis, stock, stockIDs = ['2520', '2545', '5880']) => {
         let eventInfos = [];
         stockIDs.map(stockID => {
@@ -143,7 +155,7 @@ function Scheduler() {
             }
             return msg;
         }
-        [GConst.DEVELOPERID].map(observer => {
+        [GConst.DEVELOPERID, GConst.TESTERIDS[3]].map(observer => {
             eventInfos.push({
                 name: `line-push-weather-${observer}`, 
                 func: () => {

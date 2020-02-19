@@ -24,7 +24,8 @@ const GConst = {
     TESTERIDS: [
         'U5dc421e1d531284fa5f7fe7d28446e6a', // Father
         'Uc6da919ef530d5f5c30c4a5e7a8fb5ac', // Mother
-        'Ub3b0731bb4000cf3d024da472135d8e5' // Sister
+        'Ub3b0731bb4000cf3d024da472135d8e5', // Sister
+        'U240b5fedca6a453e7d2e3ea0b7172ff5' // Wife
     ],
     USERMode: {
         MESSAGE2: -100,

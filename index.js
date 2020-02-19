@@ -138,7 +138,7 @@ app.listen(SERVER_PORT || 80, function () {
                     /* default events */
                     let publisher = (obs, msgs) => bot.push(obs, msgs);
                     let events = [];
-                    events = events.concat(Scheduler.getDefaultStockEvents(YRedis, Stock, ['2520', '2545', '5880']));
+                    events = events.concat(Scheduler.getDefaultStockEvents(YRedis, Stock, ['2520', '2545', '5880', '0056']));
                     events = events.concat(Scheduler.getDefaultWeatherEvents(YRedis, Weather));
                     events = events.concat(Scheduler.getDefaultStockObserverEvents(YRedis, publisher, [GConst.DEVELOPERID, GConst.TESTERIDS[0]], ['2520', '2545', '5880', '0056']));
                     events = events.concat(Scheduler.getDefaultWeatherObserverEvents(YRedis, publisher));
@@ -235,21 +235,44 @@ const InterpretMessage = function (text, source) {
         /* 雪況查詢 */
         return callback => QuerySnowOperate(userID, GVars.UserStorage[userID], null, callback);
     } else if (text.toUpperCase().indexOf('SCHEDULE') == 0) {
-        /* 排程器時間間隔設定並重啟(0為stop) */
-        let setting_sec = text.toUpperCase().replace('SCHEDULE', '') * 1;
-        return callback => {
-            if (typeof setting_sec === 'number') {
+        /* 排程器時間間隔設定並重啟 */
+        let schedule_cmd = text.toUpperCase().replace('SCHEDULE', '');
+        if (schedule_cmd.indexOf('T') === 0) {
+            /* 若為SCHEDULET, 則為指定幾點幾分時區啟動 ex: SCHEDULET072008 => 指定 07:20 GMT+8 啟動 */
+            let settings = schedule_cmd.replace('T', '');
+            let hour = null, minute = 0, timeoffset = 8;
+            if (settings.length >= 2)
+                hour = settings.substring(0, 2) * 1;
+            if (settings.length >= 4)
+                minute = settings.substring(2, 4) * 1;
+            if (settings.length >= 6)
+                timeoffset = settings.substring(4, 6) * 1; 
+            return callback => {
                 Scheduler.stop();
-                if (setting_sec >= 60) {
-                    Scheduler.start(setting_sec);
-                    callback(`排程重設完成! (${setting_sec}s)`);
+                if (hour !== null && typeof hour === 'number' && typeof minute === 'number' && typeof timeoffset === 'number') {
+                    Scheduler.scheduleStart(hour, minute, timeoffset);
+                    callback(`排程重設完成! (目前已暫停,將於${hour}點${minute}分(GMT+${timeoffset})重新啟動)`);
                 } else {
-                    callback(`排程器已中止! (${setting_sec}s)`);
+                    callback(`排程器已中止! (format like SCHEDULET072008)`);
                 }
-            } else {
-                callback(`排程重設失敗! (${setting_sec}s)`);
-            }
-        };
+            };
+        } else {
+            /* 設定時間間隔, 並立刻重啟排程器 ex: SCHEDULE86400 => 設定一天跑一次, 立刻重新啟動 */
+            let setting_sec = schedule_cmd * 1;
+            return callback => {
+                if (typeof setting_sec === 'number') {
+                    Scheduler.stop();
+                    if (setting_sec >= 60) {
+                        Scheduler.start(setting_sec);
+                        callback(`排程重設完成! (${setting_sec}s)`);
+                    } else {
+                        callback(`排程器已中止! (${setting_sec}s)`);
+                    }
+                } else {
+                    callback(`排程重設失敗! (${setting_sec}s)`);
+                }
+            };
+        }
     } else if (GVars.UserStorage.hasOwnProperty(userID)) {
         /* 功能模式已啟動*/
         return callback => MenuFunction(userID, text, callback);
