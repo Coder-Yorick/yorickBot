@@ -11,11 +11,14 @@ function Scheduler() {
         this.events = {};
     }
 
-    this.registerEvent = (eventName, eventFunc) => {
+    this.registerEvent = (eventName, eventFunc, delay = 0) => {
         if (this.events.hasOwnProperty(eventName) || typeof eventFunc !== 'function')
             return false;
         else {
-            this.events[eventName] = eventFunc;
+            this.events[eventName] = {
+                delay: delay,
+                func: eventFunc
+            };
             return true;
         }
     }
@@ -25,21 +28,24 @@ function Scheduler() {
             delete this.events[eventName];
     }
 
-    this.start = (sec = 86400) => {
+    this.start = (sec = 86400, execOnce = false) => {
         if (this.running) return;
         if (sec > 0)
             this.durationSecs = sec;
         this.running = true;
-        this.timer = setInterval(() => {
-            Object.values(this.events).map(function(e) {
+        let process = () => {
+            for (let eventName in this.events) {
                 try {
-                    if (typeof e === 'function')
-                        setTimeout(e, 0);
+                    if (typeof this.events[eventName].func === 'function')
+                        setTimeout(this.events[eventName].func, this.events[eventName].delay * 1000);
                 } catch (ex) {
                     console.log(ex);
                 }
-            });
-        }, this.durationSecs * 1000);
+            }
+        } 
+        if (execOnce)
+            process();
+        this.timer = setInterval(process, this.durationSecs * 1000);
     }
 
     this.stop = () => {
@@ -54,9 +60,9 @@ function Scheduler() {
         let chk_proc = () => {
             let now = new Date();
             if (hour === (now.getUTCHours() + timeoffset) && minute === now.getUTCMinutes()) {
-                this.start(this.durationSecs);
+                this.start(this.durationSecs, true);
             } else {
-                setTimeout(chk_proc, 60000);
+                setTimeout(chk_proc, 30000);
             }
         }
         chk_proc();
@@ -144,8 +150,8 @@ function Scheduler() {
 
     this.getDefaultWeatherObserverEvents = (yRedis, publishFunc) => {
         let eventInfos = [];
-        let weatherInfoFormat = weatherInfo => {
-            let msg = `=== 天氣預報(${weatherInfo.date}) ===\n`;
+        let weatherInfoFormat = (city, weatherInfo) => {
+            let msg = `== ${city} (${weatherInfo.date}) ==\n`;
             msg += `氣溫: ${weatherInfo.minT} ～ ${weatherInfo.maxT} ℃\n`;
             msg += `降雨: ${weatherInfo.pop}％\n`;
             if (weatherInfo.nextdate_minT && weatherInfo.nextdate_maxT) {
@@ -161,7 +167,7 @@ function Scheduler() {
                 func: () => {
                     yRedis.GetObj('weather-taipei', null, weatherInfo => {
                         if (weatherInfo) {
-                            publishFunc(observer, [weatherInfoFormat(weatherInfo)]);
+                            publishFunc(observer, [weatherInfoFormat('臺北市', weatherInfo)]);
                         }
                     });
                 }
@@ -173,7 +179,7 @@ function Scheduler() {
                 func: () => {
                     yRedis.GetObj('weather-ilan', null, weatherInfo => {
                         if (weatherInfo) {
-                            publishFunc(observer, [weatherInfoFormat(weatherInfo)]);
+                            publishFunc(observer, [weatherInfoFormat('宜蘭縣', weatherInfo)]);
                         }
                     });
                 }
@@ -185,7 +191,7 @@ function Scheduler() {
                 func: () => {
                     yRedis.GetObj('weather-newtaipei', null, weatherInfo => {
                         if (weatherInfo) {
-                            publishFunc(observer, [weatherInfoFormat(weatherInfo)]);
+                            publishFunc(observer, [weatherInfoFormat('新北市', weatherInfo)]);
                         }
                     });
                 }

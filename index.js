@@ -140,10 +140,14 @@ app.listen(SERVER_PORT || 80, function () {
                     let events = [];
                     events = events.concat(Scheduler.getDefaultStockEvents(YRedis, Stock, ['2520', '2545', '5880', '0056']));
                     events = events.concat(Scheduler.getDefaultWeatherEvents(YRedis, Weather));
-                    events = events.concat(Scheduler.getDefaultStockObserverEvents(YRedis, publisher, [GConst.DEVELOPERID, GConst.TESTERIDS[0]], ['2520', '2545', '5880', '0056']));
-                    events = events.concat(Scheduler.getDefaultWeatherObserverEvents(YRedis, publisher));
                     events.map(eventInfo => {
                         Scheduler.registerEvent(eventInfo.name, eventInfo.func);
+                    });
+                    let observerEvents = [];
+                    observerEvents = observerEvents.concat(Scheduler.getDefaultStockObserverEvents(YRedis, publisher, [GConst.DEVELOPERID, GConst.TESTERIDS[0]], ['2520', '2545', '5880', '0056']));
+                    observerEvents = observerEvents.concat(Scheduler.getDefaultWeatherObserverEvents(YRedis, publisher));
+                    observerEvents.map(eventInfo => {
+                        Scheduler.registerEvent(eventInfo.name, eventInfo.func, 10);
                     });
                     Scheduler.start();
                 } catch (ex) {
