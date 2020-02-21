@@ -127,6 +127,47 @@ function Scheduler() {
         return eventInfos;
     }
 
+    this.addWeatherEvent = (yRedis, publishFunc, observerID, city) => {
+        let city_key = null;
+        switch (city) {
+            case '臺北市': {
+                city_key = 'taipei';
+                break;
+            }
+            case '宜蘭縣': {
+                city_key = 'ilan';
+                break;
+            }
+            case '新北市': {
+                city_key = 'newtaipei';
+                break;
+            }
+            default:
+                city_key = null;
+        }
+        if (city_key === null)
+            return false;
+        let eventInfo = {
+            name: `line-push-weather-${observerID}`, 
+            func: () => {
+                yRedis.GetObj(`weather-${city_key}`, null, weatherInfo => {
+                    if (weatherInfo) {
+                        publishFunc(observerID, [this.weatherInfoFormat(city, weatherInfo)]);
+                    }
+                });
+            }
+        };
+        return this.registerEvent(eventInfo.name, eventInfo.func);
+    }
+
+    this.removeWeatherEvent = (observerID) => {
+        this.unregisterEvent(`line-push-weather-${observerID}`);
+    }
+
+    this.checkWeatherEventExist = (observerID) => {
+        return this.events.hasOwnProperty(`line-push-weather-${observerID}`);
+    }
+
     this.getDefaultStockObserverEvents = (yRedis, publishFunc, observers = [], stockIDs = ['2520', '2545', '5880']) => {
         let eventInfos = [];
         observers.map(observer => {
@@ -149,26 +190,27 @@ function Scheduler() {
         return eventInfos;
     }
 
+    this.weatherInfoFormat = (city, weatherInfo) => {
+        let msg = `== ${city} (${weatherInfo.date}) ==\n`;
+        msg += `氣溫: ${weatherInfo.minT} ～ ${weatherInfo.maxT} ℃\n`;
+        msg += `降雨: ${weatherInfo.pop}％\n`;
+        if (weatherInfo.nextdate_minT && weatherInfo.nextdate_maxT) {
+            msg += `明天: ${weatherInfo.nextdate_minT} ～ ${weatherInfo.nextdate_maxT} ℃`;
+            if (weatherInfo.nextdate_pop)
+                msg += ` (${weatherInfo.nextdate_pop}％)`;
+        }
+        return msg;
+    }
+
     this.getDefaultWeatherObserverEvents = (yRedis, publishFunc) => {
         let eventInfos = [];
-        let weatherInfoFormat = (city, weatherInfo) => {
-            let msg = `== ${city} (${weatherInfo.date}) ==\n`;
-            msg += `氣溫: ${weatherInfo.minT} ～ ${weatherInfo.maxT} ℃\n`;
-            msg += `降雨: ${weatherInfo.pop}％\n`;
-            if (weatherInfo.nextdate_minT && weatherInfo.nextdate_maxT) {
-                msg += `明天: ${weatherInfo.nextdate_minT} ～ ${weatherInfo.nextdate_maxT} ℃`;
-                if (weatherInfo.nextdate_pop)
-                    msg += ` (${weatherInfo.nextdate_pop}％)`;
-            }
-            return msg;
-        }
         [GConst.DEVELOPERID, GConst.TESTERIDS[3]].map(observer => {
             eventInfos.push({
                 name: `line-push-weather-${observer}`, 
                 func: () => {
                     yRedis.GetObj('weather-taipei', null, weatherInfo => {
                         if (weatherInfo) {
-                            publishFunc(observer, [weatherInfoFormat('臺北市', weatherInfo)]);
+                            publishFunc(observer, [this.weatherInfoFormat('臺北市', weatherInfo)]);
                         }
                     });
                 }
@@ -180,7 +222,7 @@ function Scheduler() {
                 func: () => {
                     yRedis.GetObj('weather-ilan', null, weatherInfo => {
                         if (weatherInfo) {
-                            publishFunc(observer, [weatherInfoFormat('宜蘭縣', weatherInfo)]);
+                            publishFunc(observer, [this.weatherInfoFormat('宜蘭縣', weatherInfo)]);
                         }
                     });
                 }
@@ -192,7 +234,7 @@ function Scheduler() {
                 func: () => {
                     yRedis.GetObj('weather-newtaipei', null, weatherInfo => {
                         if (weatherInfo) {
-                            publishFunc(observer, [weatherInfoFormat('新北市', weatherInfo)]);
+                            publishFunc(observer, [this.weatherInfoFormat('新北市', weatherInfo)]);
                         }
                     });
                 }

@@ -179,7 +179,7 @@ const InterpretMessage = function (text, source) {
             type: null,
             item: null
         };
-        return callback => callback(new MenuTemplate(GConst.USERMode.WEATHER));
+        return callback => callback(new MenuTemplate(GConst.USERMode.WEATHER, userID));
     } else if (text == '查詢匯率') {
         GVars.UserStorage[userID] = {
             mode: GConst.USERMode.FOREX,
@@ -303,7 +303,7 @@ const InterpretPostback = function (data, userID) {
             }
             break;
         case GConst.USERMode.WEATHER:
-            if (GConst.USERModeType.QUERY == data || GConst.USERModeType.QUERY1 == data) {
+            if (GConst.USERModeType.QUERY == data || GConst.USERModeType.QUERY1 == data || GConst.USERModeType.QUERY2 == data) {
                 /* 切換模式*/
                 GVars.UserStorage[userID].type = data;
                 return callback => WeatherOperate(userID, GVars.UserStorage[userID], null, callback);
@@ -348,7 +348,7 @@ const MenuFunction = function (userID, text, callback) {
 }
 
 /* 功能Template*/
-const MenuTemplate = function (USERMode) {
+const MenuTemplate = function (USERMode, userID = null) {
     let template = null;
     switch (USERMode) {
         case GConst.USERMode.AQI:
@@ -362,6 +362,13 @@ const MenuTemplate = function (USERMode) {
             template = new LineItem.Template('查詢天氣狀況', '要查詢哪時的天氣呢');
             template.template.actions.push(new LineItem.TemplateAction('查詢最近36小時天氣', GConst.USERModeType.QUERY));
             template.template.actions.push(new LineItem.TemplateAction('查詢未來一週天氣', GConst.USERModeType.QUERY1));
+            if (userID !== null) {
+                if (Scheduler.checkWeatherEventExist(userID)) {
+                    template.template.actions.push(new LineItem.TemplateAction('取消天氣預報通知', GConst.USERModeType.QUERY3));
+                } else {
+                    template.template.actions.push(new LineItem.TemplateAction('訂閱天氣預報通知', GConst.USERModeType.QUERY2));
+                }
+            }
             break;
         case GConst.USERMode.FOREX:
             template = new LineItem.Template('查詢匯率', '要查詢哪種匯率資訊呢');
@@ -436,6 +443,17 @@ const WeatherOperate = function (userid, storage, text, callback) {
             Weather.GetOneWeekWeather(text, results => {
                 callback(results);
             });
+        } else if (storage.type == GConst.USERModeType.QUERY2) {
+            /* 訂閱天氣預報通知 */
+            delete GVars.UserStorage[userid];
+            let publisher = (observerID, msgs) => bot.push(observerID, msgs);
+            let subscribe_result = Scheduler.addWeatherEvent(YRedis, publisher, userid, text);
+            callback(`訂閱${text}天氣預報通知${subscribe_result ? '成功': '失敗'}`);
+        } else if (storage.type == GConst.USERModeType.QUERY3) {
+            /* 取消天氣預報通知 */
+            delete GVars.UserStorage[userid];
+            Scheduler.removeWeatherEvent(userid);
+            callback('已取消訂閱天氣預報通知');
         }
     }
 }

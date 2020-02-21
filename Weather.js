@@ -10,8 +10,7 @@ const WEATHER_API_KEY = 'CWB-4C0C1280-0328-4FC1-8434-53EB845F507E';
 const WEATHER_CITIES = [
     '臺北市',
     '新北市',
-    '宜蘭縣',
-    '臺中市'
+    '宜蘭縣'
 ];
 
 function Weather() {
