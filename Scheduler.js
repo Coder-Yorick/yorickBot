@@ -56,11 +56,12 @@ function Scheduler() {
         }
     }
 
-    this.scheduleStart = (hour, minute = 0, timeoffset = 8) => {
+    this.scheduleStart = (hour, minute = 0, timeoffset = 8, callback) => {
         let chk_proc = () => {
             let now = new Date();
             if (hour === (now.getUTCHours() + timeoffset) && minute === now.getUTCMinutes()) {
                 this.start(this.durationSecs, true);
+                callback(`${hour}點${minute}分排程器啟動了!`);
             } else {
                 setTimeout(chk_proc, 30000);
             }

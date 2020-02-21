@@ -254,7 +254,7 @@ const InterpretMessage = function (text, source) {
             return callback => {
                 Scheduler.stop();
                 if (hour !== null && typeof hour === 'number' && typeof minute === 'number' && typeof timeoffset === 'number') {
-                    Scheduler.scheduleStart(hour, minute, timeoffset);
+                    Scheduler.scheduleStart(hour, minute, timeoffset, (msg) => bot.push(GConst.DEVELOPERID, [msg]));
                     callback(`排程重設完成! (目前已暫停,將於${hour}點${minute}分(GMT+${timeoffset})重新啟動)`);
                 } else {
                     callback(`排程器已中止! (format like SCHEDULET072008)`);
@@ -277,6 +277,12 @@ const InterpretMessage = function (text, source) {
                 }
             };
         }
+    } else if (text.toUpperCase().indexOf('SERVERTIME') == 0) {
+        /* 查詢系統時間 */
+        let now = new Date();
+        let utcTime = `${now.getUTCHours()}:${now.getUTCMinutes()}`;
+        let localTime = `${now.getHours()}:${now.getMinutes()}`;
+        return callback => callback(`UTC: ${utcTime}\nLocal: ${localTime}`);
     } else if (GVars.UserStorage.hasOwnProperty(userID)) {
         /* 功能模式已啟動*/
         return callback => MenuFunction(userID, text, callback);
