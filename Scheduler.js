@@ -69,7 +69,7 @@ function Scheduler() {
         chk_proc();
     }
 
-    this.getDefaultStockEvents = (yRedis, stock, stockIDs = ['2520', '2545', '5880']) => {
+    this.getDefaultStockEvents = (yRedis, stock, stockIDs = ['2520', '2545', '5880', '0056', '0050']) => {
         let eventInfos = [];
         stockIDs.map(stockID => {
             eventInfos.push({
@@ -168,7 +168,7 @@ function Scheduler() {
         return this.events.hasOwnProperty(`line-push-weather-${observerID}`);
     }
 
-    this.getDefaultStockObserverEvents = (yRedis, publishFunc, observers = [], stockIDs = ['2520', '2545', '5880']) => {
+    this.getDefaultStockObserverEvents = (yRedis, publishFunc, observers = [], stockIDs = ['2520', '2545', '5880', '0056', '0050']) => {
         let eventInfos = [];
         observers.map(observer => {
             eventInfos.push({

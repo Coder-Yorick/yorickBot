@@ -135,18 +135,27 @@ app.listen(SERVER_PORT || 80, function () {
                 /* Scheduler */
                 try {
                     Scheduler.Initial();
-                    /* default events */
+                    /* update data events */
                     let publisher = (obs, msgs) => bot.push(obs, msgs);
                     let events = [];
-                    events = events.concat(Scheduler.getDefaultStockEvents(YRedis, Stock, ['2520', '2545', '5880', '0056']));
+                    events = events.concat(Scheduler.getDefaultStockEvents(YRedis, Stock, ['2520', '2545', '5880', '0056', '0050']));
                     events = events.concat(Scheduler.getDefaultWeatherEvents(YRedis, Weather));
                     events.map(eventInfo => {
                         Scheduler.registerEvent(eventInfo.name, eventInfo.func);
                     });
+                    /* weather observer events */
                     let observerEvents = [];
-                    observerEvents = observerEvents.concat(Scheduler.getDefaultStockObserverEvents(YRedis, publisher, [GConst.DEVELOPERID, GConst.TESTERIDS[0]], ['2520', '2545', '5880', '0056']));
                     observerEvents = observerEvents.concat(Scheduler.getDefaultWeatherObserverEvents(YRedis, publisher));
                     observerEvents.map(eventInfo => {
+                        Scheduler.registerEvent(eventInfo.name, eventInfo.func, 15);
+                    });
+                    /* stock observer events */
+                    let observerStockEvents = [];
+                    observerStockEvents = observerStockEvents.concat(
+                        Scheduler.getDefaultStockObserverEvents(YRedis, publisher, [GConst.DEVELOPERID, GConst.TESTERIDS[2]], ['0050', '0056']));
+                    observerStockEvents = observerStockEvents.concat(
+                        Scheduler.getDefaultStockObserverEvents(YRedis, publisher, [GConst.TESTERIDS[0]], ['2520', '2545', '5880']));
+                    observerStockEvents.map(eventInfo => {
                         Scheduler.registerEvent(eventInfo.name, eventInfo.func, 10);
                     });
                     Scheduler.start();
