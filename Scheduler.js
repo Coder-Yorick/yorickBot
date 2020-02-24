@@ -59,7 +59,7 @@ function Scheduler() {
     this.scheduleStart = (hour, minute = 0, timeoffset = 8, callback) => {
         let chk_proc = () => {
             let now = new Date();
-            if (hour === (now.getUTCHours() + timeoffset) && minute === now.getUTCMinutes()) {
+            if (hour === ((now.getUTCHours() + timeoffset) % 24) && minute === now.getUTCMinutes()) {
                 this.start(this.durationSecs, true);
                 callback(`${hour}點${minute}分排程器啟動了!`);
             } else {
@@ -191,7 +191,7 @@ function Scheduler() {
     }
 
     this.weatherInfoFormat = (city, weatherInfo) => {
-        let msg = `== ${city} (${weatherInfo.date}) ==\n`;
+        let msg = `= ${city}(${weatherInfo.date}) =\n`;
         msg += `氣溫: ${weatherInfo.minT} ～ ${weatherInfo.maxT} ℃\n`;
         msg += `降雨: ${weatherInfo.pop}％\n`;
         if (weatherInfo.nextdate_minT && weatherInfo.nextdate_maxT) {
