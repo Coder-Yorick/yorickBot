@@ -20,7 +20,7 @@ function MaskPharmacy() {
             if (pharmacies) {
                 /* find nearby pharmacies */
                 let nearby_pharmacies = [];
-                for (let pharmacy in pharmacies) {
+                pharmacies.forEach(pharmacy => {
                     try {
                         let location_distance = Math.pow((lng - pharmacy.pharmacy.lng) * 10000, 2) + Math.pow((lat - pharmacy.pharmacy.lat) * 10000, 2);
                         if (location_distance <= (NEARBY_DISTANCE * NEARBY_DISTANCE)) {
@@ -37,7 +37,7 @@ function MaskPharmacy() {
                     } catch (e) {
                         console.log(e);
                     }
-                }
+                });
                 callback(nearby_pharmacies);
             } else {
                 callback([]);
