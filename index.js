@@ -16,6 +16,7 @@ const YRedis = require('./YRedis.js');
 const LineNotify = require('./LineNotify.js');
 const QuerySnow = require('./QuerySnow.js');
 const Stock = require('./Stock.js');
+const MaskPharmacy = require('./MaskPharmacy.js');
 
 /* linebot setting*/
 const bot = linebot({
@@ -57,7 +58,9 @@ bot.on('message', function (event) {
             event.reply('Nice audio!');
             break;
         case 'location': //定位
-            event.reply(['你的定位是在\n', 'Lat:' + event.message.latitude, 'Long:' + event.message.longitude]);
+            let proc = InterpretLocation(event.message.latitude, event.message.longitude, event.source);
+            if (proc != null && typeof proc == 'function')
+                proc(msg => event.reply(msg));
             break;
         case 'sticker': //貼圖
             event.reply(event.message);
@@ -140,24 +143,25 @@ app.listen(SERVER_PORT || 80, function () {
                     let events = [];
                     events = events.concat(Scheduler.getDefaultStockEvents(YRedis, Stock, ['2520', '2545', '5880', '0056', '0050']));
                     events = events.concat(Scheduler.getDefaultWeatherEvents(YRedis, Weather));
+                    events = events.concat(Scheduler.getDefaultMaskPharmacyEvents(YRedis, MaskPharmacy));
                     events.map(eventInfo => {
                         Scheduler.registerEvent(eventInfo.name, eventInfo.func);
                     });
-                    /* weather observer events */
-                    let observerEvents = [];
-                    observerEvents = observerEvents.concat(Scheduler.getDefaultWeatherObserverEvents(YRedis, publisher));
-                    observerEvents.map(eventInfo => {
-                        Scheduler.registerEvent(eventInfo.name, eventInfo.func, 15);
-                    });
-                    /* stock observer events */
-                    let observerStockEvents = [];
-                    observerStockEvents = observerStockEvents.concat(
-                        Scheduler.getDefaultStockObserverEvents(YRedis, publisher, [GConst.DEVELOPERID, GConst.TESTERIDS[2]], ['0050', '0056']));
-                    observerStockEvents = observerStockEvents.concat(
-                        Scheduler.getDefaultStockObserverEvents(YRedis, publisher, [GConst.TESTERIDS[0]], ['2520', '2545', '5880']));
-                    observerStockEvents.map(eventInfo => {
-                        Scheduler.registerEvent(eventInfo.name, eventInfo.func, 10);
-                    });
+                    // /* weather observer events */
+                    // let observerEvents = [];
+                    // observerEvents = observerEvents.concat(Scheduler.getDefaultWeatherObserverEvents(YRedis, publisher));
+                    // observerEvents.map(eventInfo => {
+                    //     Scheduler.registerEvent(eventInfo.name, eventInfo.func, 15);
+                    // });
+                    // /* stock observer events */
+                    // let observerStockEvents = [];
+                    // observerStockEvents = observerStockEvents.concat(
+                    //     Scheduler.getDefaultStockObserverEvents(YRedis, publisher, [GConst.DEVELOPERID, GConst.TESTERIDS[2]], ['0050', '0056']));
+                    // observerStockEvents = observerStockEvents.concat(
+                    //     Scheduler.getDefaultStockObserverEvents(YRedis, publisher, [GConst.TESTERIDS[0]], ['2520', '2545', '5880']));
+                    // observerStockEvents.map(eventInfo => {
+                    //     Scheduler.registerEvent(eventInfo.name, eventInfo.func, 10);
+                    // });
                     Scheduler.start();
                 } catch (ex) {
                     bot.push(GConst.DEVELOPERID, ['Scheduler startup fail!']);
@@ -170,6 +174,37 @@ app.listen(SERVER_PORT || 80, function () {
         console.log(ex.message);
     }
 });
+
+/* 處理收到定位動作 */
+const InterpretLocation = function (lat, lng, source) {
+    /* 附近口罩地圖查詢 */
+    let queryMaskOperate = callback => {
+        MaskPharmacy.FindNearby(YRedis, lng, lat, nearby_pharmacies => {
+            if (nearby_pharmacies.length > 3) {
+                nearby_pharmacies = nearby_pharmacies.slice(0, 3);
+            }
+            let msg = '';
+            nearby_pharmacies.forEach(nearby_pharmacy => {
+                msg += `${MaskPharmacy.MaskIcon}${nearby_pharmacy.pharmacy.info.name}\n`;
+                msg += `地址: ${nearby_pharmacy.pharmacy.info.address}\n`;
+                msg += `電話: ${nearby_pharmacy.pharmacy.info.phone}\n`;
+                msg += `成人: ${nearby_pharmacy.mask.adult}個\n`;
+                msg += `兒童: ${nearby_pharmacy.mask.child}個\n`;
+                if (nearby_pharmacy.mask.note != null && nearby_pharmacy.mask.note.length > 0) {
+                    msg += `注意事項: ${nearby_pharmacy.mask.note}\n`;
+                }
+                msg += `更新時間: ${nearby_pharmacy.mask.updated}\n`;
+                msg += '\n';
+            });
+            if (msg.length > 0) {
+                callback(msg);
+            } else {
+                callback('找不到附近藥局口罩資訊');
+            }
+        });
+    }
+    return callback => queryMaskOperate(callback);
+}
 
 /* 解譯輸入文字*/
 const InterpretMessage = function (text, source) {
