@@ -197,7 +197,7 @@ const InterpretLocation = function (lat, lng, source) {
                     longitude: nearby_pharmacy.pharmacy.lng
                 });
             });
-            if (msg.length > 0) {
+            if (msgs.length > 0) {
                 callback(msgs);
             } else {
                 callback('找不到附近藥局口罩資訊');
