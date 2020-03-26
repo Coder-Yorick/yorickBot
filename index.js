@@ -182,21 +182,23 @@ const InterpretLocation = function (lat, lng, source) {
             if (nearby_pharmacies.length > 3) {
                 nearby_pharmacies = nearby_pharmacies.slice(0, 3);
             }
-            let msg = '';
+            let msgs = [];
             nearby_pharmacies.forEach(nearby_pharmacy => {
-                msg += `${MaskPharmacy.MaskIcon}${nearby_pharmacy.pharmacy.info.name}\n`;
-                msg += `地址: ${nearby_pharmacy.pharmacy.info.address}\n`;
-                msg += `電話: ${nearby_pharmacy.pharmacy.info.phone}\n`;
-                msg += `成人: ${nearby_pharmacy.mask.adult}個\n`;
-                msg += `兒童: ${nearby_pharmacy.mask.child}個\n`;
+                let title = `${nearby_pharmacy.pharmacy.info.name}(${nearby_pharmacy.mask.updated})\n`;
+                title += `成人: ${nearby_pharmacy.mask.adult}個, 兒童: ${nearby_pharmacy.mask.child}個`;
                 if (nearby_pharmacy.mask.note != null && nearby_pharmacy.mask.note.length > 0) {
-                    msg += `公告: ${nearby_pharmacy.mask.note}\n`;
+                    title += `\n公告: ${nearby_pharmacy.mask.note}`;
                 }
-                msg += `(${nearby_pharmacy.mask.updated})\n`;
-                msg += '\n';
+                msgs.push({
+                    type: 'location',
+                    title: title,
+                    address: `${nearby_pharmacy.pharmacy.info.address}`,
+                    latitude: nearby_pharmacy.pharmacy.lat,
+                    longitude: nearby_pharmacy.pharmacy.lng
+                });
             });
             if (msg.length > 0) {
-                callback(msg);
+                callback(msgs);
             } else {
                 callback('找不到附近藥局口罩資訊');
             }
