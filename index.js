@@ -184,11 +184,13 @@ const InterpretLocation = function (lat, lng, source) {
             }
             let msgs = [];
             nearby_pharmacies.forEach(nearby_pharmacy => {
-                let title = `${nearby_pharmacy.pharmacy.info.name}(${nearby_pharmacy.mask.updated})\n`;
-                title += `成人: ${nearby_pharmacy.mask.adult}個, 兒童: ${nearby_pharmacy.mask.child}個`;
+                let title = `${MaskPharmacy.MaskIcon}${nearby_pharmacy.pharmacy.info.name}\n`;
+                title += `成人: ${nearby_pharmacy.mask.adult}個\n`
+                title += `兒童: ${nearby_pharmacy.mask.child}個\n`;
                 if (nearby_pharmacy.mask.note != null && nearby_pharmacy.mask.note.length > 0) {
-                    title += `\n公告: ${nearby_pharmacy.mask.note}`;
+                    title += `公告:\n${nearby_pharmacy.mask.note}\n`;
                 }
+                title += `(${nearby_pharmacy.mask.updated})`;
                 msgs.push({
                     type: 'location',
                     title: title,
@@ -198,6 +200,7 @@ const InterpretLocation = function (lat, lng, source) {
                 });
             });
             if (msgs.length > 0) {
+                msgs.reverse();
                 callback(msgs);
             } else {
                 callback('找不到附近藥局口罩資訊');
