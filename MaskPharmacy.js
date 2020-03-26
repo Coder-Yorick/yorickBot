@@ -27,8 +27,8 @@ function MaskPharmacy() {
                             pharmacy.distance = location_distance;
                             /* sort by distance */
                             let idx = 0;
-                            for (idx = nearby_pharmacies.length; i > 0; i--) {
-                                if (nearby_pharmacies[i].distance < pharmacy.distance) {
+                            for (idx = nearby_pharmacies.length; idx > 0; idx--) {
+                                if (nearby_pharmacies[idx-1].distance < pharmacy.distance) {
                                     break;
                                 }
                             }
