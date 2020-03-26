@@ -180,7 +180,7 @@ const InterpretLocation = function (lat, lng, source) {
     let queryMaskOperate = callback => {
         MaskPharmacy.FindNearby(lng, lat, nearby_pharmacies => {
             if (nearby_pharmacies.length > 3) {
-                nearby_pharmacies = nearby_pharmacies.slice(0, 5);
+                nearby_pharmacies = nearby_pharmacies.slice(0, 3);
             }
             let msg = '';
             nearby_pharmacies.forEach(nearby_pharmacy => {
@@ -190,15 +190,11 @@ const InterpretLocation = function (lat, lng, source) {
                 msg += `成人: ${nearby_pharmacy.mask.adult}個\n`;
                 msg += `兒童: ${nearby_pharmacy.mask.child}個\n`;
                 if (nearby_pharmacy.mask.note != null && nearby_pharmacy.mask.note.length > 0) {
-                    msg += `注意事項: ${nearby_pharmacy.mask.note}\n`;
+                    msg += `公告: ${nearby_pharmacy.mask.note}\n`;
                 }
-                msg += `更新時間: ${nearby_pharmacy.mask.updated}\n`;
-                msg += `LNG: ${nearby_pharmacy.pharmacy.lng}\n`;
-                msg += `LAT: ${nearby_pharmacy.pharmacy.lat}\n`;
+                msg += `(${nearby_pharmacy.mask.updated})\n`;
                 msg += '\n';
             });
-            msg += `my lng = ${lng}\n`;
-            msg += `my lat = ${lat}\n`;
             if (msg.length > 0) {
                 callback(msg);
             } else {
