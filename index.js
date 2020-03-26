@@ -58,9 +58,9 @@ bot.on('message', function (event) {
             event.reply('Nice audio!');
             break;
         case 'location': //定位
-            let proc = InterpretLocation(event.message.latitude, event.message.longitude, event.source);
-            if (proc != null && typeof proc == 'function')
-                proc(msg => event.reply(msg));
+            let loc_proc = InterpretLocation(event.message.latitude, event.message.longitude, event.source);
+            if (loc_proc != null && typeof loc_proc == 'function')
+                loc_proc(msg => event.reply(msg));
             break;
         case 'sticker': //貼圖
             event.reply(event.message);
@@ -143,25 +143,24 @@ app.listen(SERVER_PORT || 80, function () {
                     let events = [];
                     events = events.concat(Scheduler.getDefaultStockEvents(YRedis, Stock, ['2520', '2545', '5880', '0056', '0050']));
                     events = events.concat(Scheduler.getDefaultWeatherEvents(YRedis, Weather));
-                    events = events.concat(Scheduler.getDefaultMaskPharmacyEvents(YRedis, MaskPharmacy));
                     events.map(eventInfo => {
                         Scheduler.registerEvent(eventInfo.name, eventInfo.func);
                     });
-                    // /* weather observer events */
-                    // let observerEvents = [];
-                    // observerEvents = observerEvents.concat(Scheduler.getDefaultWeatherObserverEvents(YRedis, publisher));
-                    // observerEvents.map(eventInfo => {
-                    //     Scheduler.registerEvent(eventInfo.name, eventInfo.func, 15);
-                    // });
-                    // /* stock observer events */
-                    // let observerStockEvents = [];
-                    // observerStockEvents = observerStockEvents.concat(
-                    //     Scheduler.getDefaultStockObserverEvents(YRedis, publisher, [GConst.DEVELOPERID, GConst.TESTERIDS[2]], ['0050', '0056']));
-                    // observerStockEvents = observerStockEvents.concat(
-                    //     Scheduler.getDefaultStockObserverEvents(YRedis, publisher, [GConst.TESTERIDS[0]], ['2520', '2545', '5880']));
-                    // observerStockEvents.map(eventInfo => {
-                    //     Scheduler.registerEvent(eventInfo.name, eventInfo.func, 10);
-                    // });
+                    /* weather observer events */
+                    let observerEvents = [];
+                    observerEvents = observerEvents.concat(Scheduler.getDefaultWeatherObserverEvents(YRedis, publisher));
+                    observerEvents.map(eventInfo => {
+                        Scheduler.registerEvent(eventInfo.name, eventInfo.func, 15);
+                    });
+                    /* stock observer events */
+                    let observerStockEvents = [];
+                    observerStockEvents = observerStockEvents.concat(
+                        Scheduler.getDefaultStockObserverEvents(YRedis, publisher, [GConst.DEVELOPERID, GConst.TESTERIDS[2]], ['0050', '0056']));
+                    observerStockEvents = observerStockEvents.concat(
+                        Scheduler.getDefaultStockObserverEvents(YRedis, publisher, [GConst.TESTERIDS[0]], ['2520', '2545', '5880']));
+                    observerStockEvents.map(eventInfo => {
+                        Scheduler.registerEvent(eventInfo.name, eventInfo.func, 10);
+                    });
                     Scheduler.start();
                 } catch (ex) {
                     bot.push(GConst.DEVELOPERID, ['Scheduler startup fail!']);
@@ -179,7 +178,7 @@ app.listen(SERVER_PORT || 80, function () {
 const InterpretLocation = function (lat, lng, source) {
     /* 附近口罩地圖查詢 */
     let queryMaskOperate = callback => {
-        MaskPharmacy.FindNearby(YRedis, lng, lat, nearby_pharmacies => {
+        MaskPharmacy.FindNearby(lng, lat, nearby_pharmacies => {
             if (nearby_pharmacies.length > 3) {
                 nearby_pharmacies = nearby_pharmacies.slice(0, 3);
             }

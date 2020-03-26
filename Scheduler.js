@@ -127,19 +127,6 @@ function Scheduler() {
         return eventInfos;
     }
 
-    this.getDefaultMaskPharmacyEvents = (yRedis, maskPharmacy) => {
-        let eventInfos = [];
-        eventInfos.push({
-            name: 'maskpharmacy', 
-            func: () => {
-                maskPharmacy.QueryAll(pharmacies => {
-                    yRedis.Set('maskpharmacies', JSON.stringify(pharmacies), r => {})
-                });
-            }
-        });
-        return eventInfos;
-    }
-
     this.addWeatherEvent = (yRedis, publishFunc, observerID, city) => {
         let city_key = null;
         switch (city) {

@@ -15,10 +15,9 @@ function MaskPharmacy() {
         });
     }
 
-    this.FindNearby = function (yRedis, lng, lat, callback) {
-        yRedis.GetStr('maskpharmacies', null, jpharmacies => {
-            if (jpharmacies) {
-                let pharmacies = JSON.parse(jpharmacies);
+    this.FindNearby = function (lng, lat, callback) {
+        this.QueryAll(pharmacies => {
+            if (pharmacies) {
                 /* find nearby pharmacies */
                 let nearby_pharmacies = [];
                 for (let pharmacy in pharmacies) {
@@ -35,7 +34,8 @@ function MaskPharmacy() {
                             }
                             nearby_pharmacies.splice(idx, 0, pharmacy);
                         }
-                    } catch {
+                    } catch (e) {
+                        console.log(e);
                     }
                 }
                 callback(nearby_pharmacies);
