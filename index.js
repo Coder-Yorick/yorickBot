@@ -132,7 +132,8 @@ app.listen(SERVER_PORT || 80, function () {
     }
     /* Connect Redis */
     try {
-        ENV.REDIS.REDIS_HOST, ENV.REDIS.REDIS_PORT, ENV.REDIS.REDIS_PWD
+        console.log(ENV.REDIS.REDIS_HOST)
+        console.log(ENV.REDIS.REDIS_PORT)
         YRedis.Connect(result => {
             if (result) {
                 bot.push(GConst.DEVELOPERID, ['Redis connected success!']);

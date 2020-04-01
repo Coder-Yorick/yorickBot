@@ -1,11 +1,13 @@
 version: '3'
 services:
   redis:
-    container_name: yredis
+    container_name: redis
     image: redis:alpine
     restart: always
     ports:
      - "6379:6379"
+    networks:
+      - yo
   yorickbot:
     container_name: yorickbot
     build:
@@ -13,9 +15,29 @@ services:
       dockerfile: Dockerfile
     ports:
      - "8081:8081"
+    networks:
+      - yo
     depends_on:
      - redis
     environment:
     - REDIS_HOST=redis
     - REDIS_PORT=6379
     - REDIS_PWD=
+  wernight/ngrok:
+    container_name: ngrok
+    image: wernight/ngrok:latest
+    depends_on:
+     - yorickbot
+    ports:
+     - "4040:4040"
+    networks:
+     - yo
+    environment:
+     - NGROK_AUTH=${NGROK_AUTH}
+    command:
+     - /bin/sh
+     - -c
+     - |
+       ngrok http -authtoken=${NGROK_AUTH} yorickbot:8081
+networks: 
+  yo:
