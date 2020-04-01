@@ -19,11 +19,18 @@ YRedis.prototype.Initial = function(host, port, pwd) {
 
 YRedis.prototype.Connect = function(callback) {
     try {
-        this.client = redis.createClient({
-            port: this.connection.port,
-            host: this.connection.host,
-            password: this.connection.pwd
-        });
+        if (this.connection.pwd === undefined || this.connection.pwd === null || this.connection.pwd.length === 0) {
+            this.client = redis.createClient({
+                port: this.connection.port,
+                host: this.connection.host
+            });
+        } else {
+            this.client = redis.createClient({
+                port: this.connection.port,
+                host: this.connection.host,
+                password: this.connection.pwd
+            });
+        }
         callback(true);
     } catch (e) {
         callback(false);
