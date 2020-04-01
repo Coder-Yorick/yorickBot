@@ -1,6 +1,7 @@
 version: '3'
 services:
   redis:
+    container_name: yredis
     image: redis:alpine
     restart: always
     ports:
@@ -13,8 +14,6 @@ services:
     ports:
      - "8081:8081"
     depends_on:
-     - redis
-    links:
      - redis
     environment:
     - REDIS_HOST=redis
