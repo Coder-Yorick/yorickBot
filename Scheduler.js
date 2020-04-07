@@ -78,7 +78,7 @@ function Scheduler() {
         cities.map(city => {
             let city_name = this.parseWeatherCity(city);
             let task_key = `weather-${city}`;
-            let task = new Scheduler.Task(task_key);
+            let task = new SchedulerTask(task_key);
             task.setTime(6, 0); /* Load weather at 06:00 */
             task.func = () => {
                 let parseRecords = records => {
@@ -119,7 +119,7 @@ function Scheduler() {
         if (city_key === null)
             return false;
         let task_key = `weather-${city_key}-${observerID}`;
-        let task = new Scheduler.Task(task_key);
+        let task = new SchedulerTask(task_key);
         task.setTime(hour, minute); /* Line push weather at hour:minute */
         task.func = () => {
             yRedis.GetObj(`weather-${city_key}`, null, weatherInfo => {
@@ -190,7 +190,7 @@ function Scheduler() {
 
     this.addStockTask = (yRedis, publishFunc, observerID, stockID, hour = 9, minute = 20) => {
         let task_key = `stock-${stockID}-${observerID}`;
-        let task = new Scheduler.Task(task_key);
+        let task = new SchedulerTask(task_key);
         task.setTime(hour, minute); /* Line push stock info at hour:minute */
         task.func = () => {
             yRedis.GetObj(`stock-${stockID}`, null, stockInfo => {
@@ -211,7 +211,7 @@ function Scheduler() {
     }
 }
 
-Scheduler.prototype.Task = function(name) {
+function SchedulerTask(name) {
     this.name = name;
     this.func = () => {}
     this.hour = 0;
