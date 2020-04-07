@@ -1,94 +1,86 @@
 const {GConst} = require('./GlobalConst.js');
 
 function Scheduler() {
-    this.durationSecs = 86400; /* daily */
+    this.durationSecs = 60; /* frequency 60s */
+    this.timeoffset = 8;
     this.timer = null;
     this.running = false;
-    this.events = {};
+    this.tasks = {};
 
     this.Initial = () => {
         this.stop();
-        this.events = {};
+        this.tasks = {};
     }
 
-    this.registerEvent = (eventName, eventFunc, delay = 0) => {
-        if (this.events.hasOwnProperty(eventName) || typeof eventFunc !== 'function')
-            return false;
-        else {
-            this.events[eventName] = {
-                delay: delay,
-                func: eventFunc
-            };
-            return true;
-        }
-    }
-
-    this.unregisterEvent = (eventName) => {
-        if (this.events.hasOwnProperty(eventName))
-            delete this.events[eventName];
-    }
-
-    this.start = (sec = 86400, execOnce = false) => {
+    this.start = (callback) => {
         if (this.running) return;
-        if (sec > 0)
-            this.durationSecs = sec;
         this.running = true;
         let process = () => {
-            for (let eventName in this.events) {
+            for (let taskKey in this.tasks) {
                 try {
-                    if (typeof this.events[eventName].func === 'function')
-                        setTimeout(this.events[eventName].func, this.events[eventName].delay * 1000);
+                    this.tasks[taskKey].exec(this.timeoffset);
                 } catch (ex) {
                     console.log(ex);
                 }
             }
-        } 
-        if (execOnce)
-            process();
+        }
         this.timer = setInterval(process, this.durationSecs * 1000);
+        if (callback !== undefined && typeof callback === 'function') {
+            let startTime = new Date();
+            callback(`${(startTime.getUTCHours() + this.timeoffset) % 24}點${startTime.getUTCMinutes()}分排程器啟動了!`);
+        }
     }
 
-    this.stop = () => {
+    this.stop = (callback) => {
         if (this.timer !== null) {
             clearInterval(this.timer);
             this.timer = null;
             this.running = false;
-        }
-    }
-
-    this.scheduleStart = (hour, minute = 0, timeoffset = 8, callback) => {
-        let chk_proc = () => {
-            let now = new Date();
-            if (hour === ((now.getUTCHours() + timeoffset) % 24) && minute === now.getUTCMinutes()) {
-                this.start(this.durationSecs, true);
-                callback(`${hour}點${minute}分排程器啟動了!`);
-            } else {
-                setTimeout(chk_proc, 30000);
+            if (callback !== undefined && typeof callback === 'function') {
+                let stopTime = new Date();
+                callback(`${(stopTime.getUTCHours() + this.timeoffset) % 24}點${stopTime.getUTCMinutes()}分排程器停止了!`);
             }
         }
-        chk_proc();
     }
 
-    this.getDefaultStockEvents = (yRedis, stock, stockIDs = ['2520', '2545', '5880', '0056', '0050']) => {
-        let eventInfos = [];
+    this.registerTask = (task_key, task) => {
+        if (this.tasks.hasOwnProperty(task_key) || typeof task.func !== 'function')
+            return false;
+        else {
+            this.tasks[task_key] = task;
+            return true;
+        }
+    }
+
+    this.unregisterTask = task_key => {
+        if (this.tasks.hasOwnProperty(task_key))
+            delete this.tasks[task_key];
+    }
+
+    this.getDefaultStockTasks = (yRedis, stock, stockIDs = ['2520', '2545', '5880', '0056', '0050']) => {
+        let task_list = [];
         stockIDs.map(stockID => {
-            eventInfos.push({
-                name: stockID, 
-                func: () => {
-                    stock.GetStockInfo(stockID, result => {
-                        yRedis.Set(`stock-${stockID}`, result, r => {});
-                    });
-                }
-            });
+            let task_key = `stock-${stockID}`;
+            let task = new this.Task(task_key);
+            task.setTime(9, 15); /* Load opening stock price at 09:15 */
+            task.func = () => {
+                stock.GetStockInfo(stockID, result => {
+                    yRedis.Set(task_key, result, r => {});
+                });
+            }
+            task_list.push(task);
         });
-        return eventInfos;
+        return task_list;
     }
 
-    this.getDefaultWeatherEvents = (yRedis, weather) => {
-        let eventInfos = [];
-        eventInfos.push({
-            name: 'weather', 
-            func: () => {
+    this.getDefaultWeatherTasks = (yRedis, weather, cities = ['taipei', 'newtaipei', 'ilan']) => {
+        let task_list = [];
+        cities.map(city => {
+            let city_name = this.parseWeatherCity(city);
+            let task_key = `weather-${city}`;
+            let task = new this.Task(task_key);
+            task.setTime(6, 0); /* Load weather at 06:00 */
+            task.func = () => {
                 let parseRecords = records => {
                     let info = {
                         date: null, 
@@ -113,21 +105,51 @@ function Scheduler() {
                     });
                     return info;
                 }
-                weather.GetOriginData('臺北市', 'ThirtySix', records => {
-                    yRedis.Set(`weather-taipei`, parseRecords(records), r => {});
-                });
-                weather.GetOriginData('宜蘭縣', 'ThirtySix', records => {
-                    yRedis.Set(`weather-ilan`, parseRecords(records), r => {});
-                });
-                weather.GetOriginData('新北市', 'ThirtySix', records => {
-                    yRedis.Set(`weather-newtaipei`, parseRecords(records), r => {});
+                weather.GetOriginData(city_name, 'ThirtySix', records => {
+                    yRedis.Set(task_key, parseRecords(records), r => {});
                 });
             }
+            task_list.push(task);
         });
-        return eventInfos;
+        return task_list;
     }
 
-    this.addWeatherEvent = (yRedis, publishFunc, observerID, city) => {
+    this.addWeatherTask = (yRedis, publishFunc, observerID, city, hour = 7, minute = 20) => {
+        let city_key = this.getWeatherCity(city);
+        if (city_key === null)
+            return false;
+        let task_key = `weather-${city_key}-${observerID}`;
+        let task = new this.Task(task_key);
+        task.setTime(hour, minute); /* Line push weather at hour:minute */
+        task.func = () => {
+            yRedis.GetObj(`weather-${city_key}`, null, weatherInfo => {
+                if (weatherInfo) {
+                    publishFunc(observerID, [this.weatherInfoFormat(city, weatherInfo)]);
+                }
+            });
+        }
+        return this.registerEvent(task_key, task);
+    }
+
+    this.removeWeatherTask = (observerID, city) => {
+        let city_key = this.getWeatherCity(city);
+        let task_key = `weather-${city_key}-${observerID}`;
+        this.unregisterTask(task_key);
+    }
+
+    this.parseWeatherCity = (city) => {
+        switch (city) {
+            case 'taipei':
+                return '臺北市';
+            case 'newtaipei':
+                return '新北市';
+            case 'ilan':
+                return '宜蘭縣';
+        }
+        return city;
+    }
+
+    this.getWeatherCity = (city) => {
         let city_key = null;
         switch (city) {
             case '臺北市': {
@@ -143,51 +165,15 @@ function Scheduler() {
                 break;
             }
             default:
-                city_key = null;
+                city_key = city;
         }
-        if (city_key === null)
-            return false;
-        let eventInfo = {
-            name: `line-push-weather-${observerID}`, 
-            func: () => {
-                yRedis.GetObj(`weather-${city_key}`, null, weatherInfo => {
-                    if (weatherInfo) {
-                        publishFunc(observerID, [this.weatherInfoFormat(city, weatherInfo)]);
-                    }
-                });
-            }
-        };
-        return this.registerEvent(eventInfo.name, eventInfo.func);
+        return city_key;
     }
 
-    this.removeWeatherEvent = (observerID) => {
-        this.unregisterEvent(`line-push-weather-${observerID}`);
-    }
-
-    this.checkWeatherEventExist = (observerID) => {
-        return this.events.hasOwnProperty(`line-push-weather-${observerID}`);
-    }
-
-    this.getDefaultStockObserverEvents = (yRedis, publishFunc, observers = [], stockIDs = ['2520', '2545', '5880', '0056', '0050']) => {
-        let eventInfos = [];
-        observers.map(observer => {
-            eventInfos.push({
-                name: `line-push-stock-${observer}`, 
-                func: () => {
-                    stockIDs.map(stockID => {
-                        yRedis.GetObj(`stock-${stockID}`, null, stockInfo => {
-                            if (stockInfo) {
-                                let msg = `${stockInfo.name}\n`;
-                                msg += `現價: ${stockInfo.price}\n`;
-                                msg += `漲跌: ${stockInfo.spread}`;
-                                publishFunc(observer, [msg]);
-                            }
-                        });
-                    });
-                }
-            });
-        });
-        return eventInfos;
+    this.checkWeatherTaskExist = (observerID, city) => {
+        let city_key = this.getWeatherCity(city);
+        let task_key = `weather-${city_key}-${observerID}`;
+        return this.tasks.hasOwnProperty(task_key);
     }
 
     this.weatherInfoFormat = (city, weatherInfo) => {
@@ -202,45 +188,53 @@ function Scheduler() {
         return msg;
     }
 
-    this.getDefaultWeatherObserverEvents = (yRedis, publishFunc) => {
-        let eventInfos = [];
-        [GConst.DEVELOPERID, GConst.TESTERIDS[3]].map(observer => {
-            eventInfos.push({
-                name: `line-push-weather-${observer}`, 
-                func: () => {
-                    yRedis.GetObj('weather-taipei', null, weatherInfo => {
-                        if (weatherInfo) {
-                            publishFunc(observer, [this.weatherInfoFormat('臺北市', weatherInfo)]);
-                        }
-                    });
+    this.addStockTask = (yRedis, publishFunc, observerID, stockID, hour = 9, minute = 20) => {
+        let task_key = `stock-${stockID}-${observerID}`;
+        let task = new this.Task(task_key);
+        task.setTime(hour, minute); /* Line push stock info at hour:minute */
+        task.func = () => {
+            yRedis.GetObj(`stock-${stockID}`, null, stockInfo => {
+                if (stockInfo) {
+                    let msg = `${stockInfo.name}\n`;
+                    msg += `現價: ${stockInfo.price}\n`;
+                    msg += `漲跌: ${stockInfo.spread}`;
+                    publishFunc(observerID, [msg]);
                 }
             });
-        });
-        [GConst.TESTERIDS[0], GConst.TESTERIDS[1]].map(observer => {
-            eventInfos.push({
-                name: `line-push-weather-${observer}`, 
-                func: () => {
-                    yRedis.GetObj('weather-ilan', null, weatherInfo => {
-                        if (weatherInfo) {
-                            publishFunc(observer, [this.weatherInfoFormat('宜蘭縣', weatherInfo)]);
-                        }
-                    });
+        }
+        return this.registerEvent(task_key, task);
+    }
+
+    this.removeStockTask = (observerID, stockID) => {
+        let task_key = `stock-${stockID}-${observerID}`;
+        this.unregisterTask(task_key);
+    }
+}
+
+Scheduler.prototype.Task = function(name) {
+    this.name = name;
+    this.func = () => {}
+    this.hour = 0;
+    this.minute = 0;
+
+    this.exec = (timeoffset = 8) => {
+        try {
+            if (typeof this.func === 'function') {
+                let now = new Date();
+                let current_hour = (now.getUTCHours() + timeoffset) % 24;
+                let current_minute = now.getUTCMinutes();
+                if (this.hour === current_hour && this.minute === current_minute) {
+                    setTimeout(this.func, 10);
                 }
-            });
-        });
-        [GConst.TESTERIDS[2]].map(observer => {
-            eventInfos.push({
-                name: `line-push-weather-${observer}`, 
-                func: () => {
-                    yRedis.GetObj('weather-newtaipei', null, weatherInfo => {
-                        if (weatherInfo) {
-                            publishFunc(observer, [this.weatherInfoFormat('新北市', weatherInfo)]);
-                        }
-                    });
-                }
-            });
-        });
-        return eventInfos;
+            }
+        } catch (e) {
+            console.log(e);
+        }
+    }
+
+    this.setTime = (hour = 0, minute = 0) => {
+        this.hour = (hour > 23  || hour < 0) ? 0 : hour;
+        this.minute = (minute > 59  || minute < 0) ? 0 : minute;
     }
 }
 
