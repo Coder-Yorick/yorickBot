@@ -61,7 +61,7 @@ function Scheduler() {
         let task_list = [];
         stockIDs.map(stockID => {
             let task_key = `stock-${stockID}`;
-            let task = new Scheduler.Task(task_key);
+            let task = new SchedulerTask(task_key);
             task.setTime(9, 15); /* Load opening stock price at 09:15 */
             task.func = () => {
                 stock.GetStockInfo(stockID, result => {
