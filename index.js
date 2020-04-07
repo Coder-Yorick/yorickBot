@@ -164,6 +164,7 @@ app.listen(SERVER_PORT || 80, function () {
                         bot.push(GConst.DEVELOPERID, [msg]);
                     });
                 } catch (ex) {
+                    console.log(ex);
                     bot.push(GConst.DEVELOPERID, ['Scheduler startup fail!']);
                 }
             } else {
