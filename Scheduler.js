@@ -128,7 +128,7 @@ function Scheduler() {
                 }
             });
         }
-        return this.registerEvent(task_key, task);
+        return this.registerTask(task_key, task);
     }
 
     this.removeWeatherTask = (observerID, city) => {
@@ -202,7 +202,7 @@ function Scheduler() {
                 }
             });
         }
-        return this.registerEvent(task_key, task);
+        return this.registerTask(task_key, task);
     }
 
     this.removeStockTask = (observerID, stockID) => {
