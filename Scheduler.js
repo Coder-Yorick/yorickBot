@@ -120,7 +120,7 @@ function Scheduler() {
             let city_name = this.parseWeatherCity(city);
             let task_key = `aqi-${city}`;
             let task = new SchedulerTask(task_key);
-            task.setTime(6, 5); /* Load AQI at 06:05 */
+            task.setTime(10, 16); /* Load AQI at 06:05 */
             task.func = () => {
                 console.log(city_name);
                 aqi.GetFormattedAQI(city_name, data => {
