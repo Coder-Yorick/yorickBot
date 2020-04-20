@@ -21,13 +21,11 @@ function AQI() {
     }
 
     this.GetFormattedAQI = function(siteName, callback) {
-        console.log(siteName);
         this.GetAQI(siteName, data => {
             if (data.length > 0) {
-                console.log(data);
                 let aqi_info = '';
                 data.forEach(a => {
-                    let aqi_status = AQI.JudgeStatus(a["AQI"]);
+                    let aqi_status = this.JudgeStatus(a["AQI"]);
                     aqi_info += a.County + '-' + a.SiteName;
                     aqi_info += '\nAQI: ' + a.AQI + (aqi_status.length > 0 ? '(' + aqi_status + ')' : '');
                     aqi_info += '\n狀態: ' + a.Status;
