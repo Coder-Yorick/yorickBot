@@ -120,7 +120,7 @@ function Scheduler() {
             let city_name = this.parseWeatherCity(city);
             let task_key = `aqi-${city}`;
             let task = new SchedulerTask(task_key);
-            task.setTime(11, 3); /* Load AQI at 06:05 */
+            task.setTime(11, 5); /* Load AQI at 06:05 */
             task.func = () => {
                 aqi.GetAQI(city_name, data => {
                     yRedis.Set(task_key, aqi.FormatToMsg(data), r => {});
