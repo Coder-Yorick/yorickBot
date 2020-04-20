@@ -120,10 +120,10 @@ function Scheduler() {
             let city_name = this.parseWeatherCity(city);
             let task_key = `aqi-${city}`;
             let task = new SchedulerTask(task_key);
-            task.setTime(10, 52); /* Load AQI at 06:05 */
+            task.setTime(10, 59); /* Load AQI at 06:05 */
             task.func = () => {
                 aqi.GetAQI(city_name, data => {
-                    yRedis.Set(task_key, data, r => {});
+                    yRedis.Set(task_key, aqi.FormatToMsg(data), r => {});
                 });
             }
             task_list.push(task);
@@ -227,7 +227,7 @@ function Scheduler() {
         this.unregisterTask(task_key);
     }
 
-    this.addAQITask = (aqi, yRedis, publishFunc, observerID, city, hour = 7, minute = 18) => {
+    this.addAQITask = (yRedis, publishFunc, observerID, city, hour = 7, minute = 18) => {
         let city_key = this.getWeatherCity(city);
         if (city_key === null)
             return false;
@@ -235,12 +235,10 @@ function Scheduler() {
         let task = new SchedulerTask(task_key);
         task.setTime(hour, minute); /* Line push weather at hour:minute */
         task.func = () => {
-            yRedis.GetObj(`aqi-${city_key}`, null, aqi_data => {
+            yRedis.GetStr(`aqi-${city_key}`, null, aqi_data => {
                 console.log(aqi_data);
-                console.log(aqi_data.length);
-                console.log(aqi_data[0]);
                 if (aqi_data) {
-                    publishFunc(observerID, [aqi.FormatToMsg(aqi_data)]);
+                    publishFunc(observerID, [aqi_data]);
                 }
             });
         }
