@@ -162,7 +162,7 @@ app.listen(SERVER_PORT || 80, function () {
                     Scheduler.addStockTask(YRedis, publisher, GConst.TESTERIDS[2], '0050');
                     Scheduler.addStockTask(YRedis, publisher, GConst.TESTERIDS[2], '5880');
                     /* default AQI observer tasks */
-                    Scheduler.addAQITask(YRedis, publisher, GConst.DEVELOPERID, '臺北市', 10, 23);
+                    Scheduler.addAQITask(YRedis, publisher, GConst.DEVELOPERID, '臺北市', 10, 28);
                     Scheduler.start(msg => {
                         bot.push(GConst.DEVELOPERID, [msg]);
                     });
