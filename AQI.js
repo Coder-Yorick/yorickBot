@@ -21,8 +21,10 @@ function AQI() {
     }
 
     this.GetFormattedAQI = function(siteName, callback) {
+        console.log(siteName);
         this.GetAQI(siteName, data => {
             if (data.length > 0) {
+                console.log(data);
                 let aqi_info = '';
                 data.forEach(a => {
                     let aqi_status = AQI.JudgeStatus(a["AQI"]);
