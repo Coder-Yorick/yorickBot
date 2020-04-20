@@ -145,6 +145,9 @@ app.listen(SERVER_PORT || 80, function () {
                     Scheduler.getDefaultWeatherTasks(YRedis, Weather).map(task => {
                         Scheduler.registerTask(task.name, task);
                     });
+                    Scheduler.getDefaultAQITasks(YRedis, AQI).map(task => {
+                        Scheduler.registerTask(task.name, task);
+                    });
                     /* default weather observer tasks */
                     let publisher = (obs, msgs) => bot.push(obs, msgs);
                     Scheduler.addWeatherTask(YRedis, publisher, GConst.DEVELOPERID, '臺北市');
@@ -157,9 +160,9 @@ app.listen(SERVER_PORT || 80, function () {
                     Scheduler.addStockTask(YRedis, publisher, GConst.DEVELOPERID, '0050');
                     Scheduler.addStockTask(YRedis, publisher, GConst.TESTERIDS[2], '0056');
                     Scheduler.addStockTask(YRedis, publisher, GConst.TESTERIDS[2], '0050');
-                    Scheduler.addStockTask(YRedis, publisher, GConst.TESTERIDS[0], '2520');
-                    Scheduler.addStockTask(YRedis, publisher, GConst.TESTERIDS[0], '2545');
-                    Scheduler.addStockTask(YRedis, publisher, GConst.TESTERIDS[0], '5880');
+                    Scheduler.addStockTask(YRedis, publisher, GConst.TESTERIDS[2], '5880');
+                    /* default AQI observer tasks */
+                    Scheduler.addAQITask(YRedis, publisher, GConst.DEVELOPERID, '臺北市', 10, 6);
                     Scheduler.start(msg => {
                         bot.push(GConst.DEVELOPERID, [msg]);
                     });
@@ -425,26 +428,7 @@ const AQIOperate = function(userid, storage, text, callback) {
         position = text;
     }
     delete GVars.UserStorage[userid];
-    AQI.GetAQI(position, data => {
-        if (data.length > 0) {
-            let aqi_info = '';
-            data.forEach(a => {
-                let aqi_status = AQI.JudgeStatus(a["AQI"]);
-                aqi_info += a.County + '-' + a.SiteName;
-                aqi_info += '\nAQI: ' + a.AQI + (aqi_status.length > 0 ? '(' + aqi_status + ')' : '');
-                aqi_info += '\n狀態: ' + a.Status;
-                if (a['PM2.5_AVG'].length > 0)
-                    aqi_info += '\nPM2.5: ' + a['PM2.5_AVG'];
-                if (a.PM10_AVG.length > 0)
-                    aqi_info += '\nPM10: ' + a.PM10_AVG;
-                aqi_info += '\n更新時間:' + a.PublishTime;
-                aqi_info += '\n--------\n';
-            });
-            callback(aqi_info);
-        } else {
-            callback('找不到這個地區的資料');
-        }
-    });
+    AQI.GetFormattedAQI(position, callback);
 }
 
 /* 天氣查詢-執行*/

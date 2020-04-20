@@ -114,6 +114,23 @@ function Scheduler() {
         return task_list;
     }
 
+    this.getDefaultAQITasks = (yRedis, aqi, cities = ['taipei', 'newtaipei', 'ilan']) => {
+        let task_list = [];
+        cities.map(city => {
+            let city_name = this.parseWeatherCity(city);
+            let task_key = `aqi-${city}`;
+            let task = new SchedulerTask(task_key);
+            task.setTime(10, 5); /* Load AQI at 06:05 */
+            task.func = () => {
+                aqi.GetFormattedAQI(city_name, data => {
+                    yRedis.Set(task_key, data, r => {});
+                });
+            }
+            task_list.push(task);
+        });
+        return task_list;
+    }
+
     this.addWeatherTask = (yRedis, publishFunc, observerID, city, hour = 7, minute = 20) => {
         let city_key = this.getWeatherCity(city);
         if (city_key === null)
@@ -207,6 +224,29 @@ function Scheduler() {
 
     this.removeStockTask = (observerID, stockID) => {
         let task_key = `stock-${stockID}-${observerID}`;
+        this.unregisterTask(task_key);
+    }
+
+    this.addAQITask = (yRedis, publishFunc, observerID, city, hour = 7, minute = 18) => {
+        let city_key = this.getWeatherCity(city);
+        if (city_key === null)
+            return false;
+        let task_key = `aqi-${city_key}-${observerID}`;
+        let task = new SchedulerTask(task_key);
+        task.setTime(hour, minute); /* Line push weather at hour:minute */
+        task.func = () => {
+            yRedis.GetObj(`aqi-${city_key}`, null, aqi_data => {
+                if (aqi_data) {
+                    publishFunc(observerID, [aqi_data]);
+                }
+            });
+        }
+        return this.registerTask(task_key, task);  
+    }  
+    
+    this.removeAQITask = (observerID, city) => {
+        let city_key = this.getWeatherCity(city);
+        let task_key = `aqi-${city_key}-${observerID}`;
         this.unregisterTask(task_key);
     }
 }
