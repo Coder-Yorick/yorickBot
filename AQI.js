@@ -20,27 +20,25 @@ function AQI() {
             .catch(err => callback(err.message));
     }
 
-    this.GetFormattedAQI = function(siteName, callback) {
-        this.GetAQI(siteName, data => {
-            if (data.length > 0) {
-                let aqi_info = '';
-                data.forEach(a => {
-                    let aqi_status = this.JudgeStatus(a["AQI"]);
-                    aqi_info += a.County + '-' + a.SiteName;
-                    aqi_info += '\nAQI: ' + a.AQI + (aqi_status.length > 0 ? '(' + aqi_status + ')' : '');
-                    aqi_info += '\n狀態: ' + a.Status;
-                    if (a['PM2.5_AVG'].length > 0)
-                        aqi_info += '\nPM2.5: ' + a['PM2.5_AVG'];
-                    if (a.PM10_AVG.length > 0)
-                        aqi_info += '\nPM10: ' + a.PM10_AVG;
-                    aqi_info += '\n更新時間:' + a.PublishTime;
-                    aqi_info += '\n--------\n';
-                });
-                callback(aqi_info);
-            } else {
-                callback('找不到這個地區的資料');
-            }
-        });
+    this.FormatToMsg = function(data) {
+        if (data.length > 0) {
+            let aqi_info = '';
+            data.forEach(a => {
+                let aqi_status = this.JudgeStatus(a["AQI"]);
+                aqi_info += a.County + '-' + a.SiteName;
+                aqi_info += '\nAQI: ' + a.AQI + (aqi_status.length > 0 ? '(' + aqi_status + ')' : '');
+                aqi_info += '\n狀態: ' + a.Status;
+                if (a['PM2.5_AVG'].length > 0)
+                    aqi_info += '\nPM2.5: ' + a['PM2.5_AVG'];
+                if (a.PM10_AVG.length > 0)
+                    aqi_info += '\nPM10: ' + a.PM10_AVG;
+                aqi_info += '\n更新時間:' + a.PublishTime;
+                aqi_info += '\n--------\n';
+            });
+            return aqi_info;
+        } else {
+            return null;
+        }
     }
 
     this.JudgeStatus = function(aqi_value) {

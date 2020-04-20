@@ -120,9 +120,9 @@ function Scheduler() {
             let city_name = this.parseWeatherCity(city);
             let task_key = `aqi-${city}`;
             let task = new SchedulerTask(task_key);
-            task.setTime(10, 27); /* Load AQI at 06:05 */
+            task.setTime(10, 43); /* Load AQI at 06:05 */
             task.func = () => {
-                aqi.GetFormattedAQI(city_name, data => {
+                aqi.GetAQI(city_name, data => {
                     yRedis.Set(task_key, data, r => {});
                 });
             }
@@ -227,7 +227,7 @@ function Scheduler() {
         this.unregisterTask(task_key);
     }
 
-    this.addAQITask = (yRedis, publishFunc, observerID, city, hour = 7, minute = 18) => {
+    this.addAQITask = (aqi, yRedis, publishFunc, observerID, city, hour = 7, minute = 18) => {
         let city_key = this.getWeatherCity(city);
         if (city_key === null)
             return false;
@@ -237,7 +237,7 @@ function Scheduler() {
         task.func = () => {
             yRedis.GetObj(`aqi-${city_key}`, null, aqi_data => {
                 if (aqi_data) {
-                    publishFunc(observerID, [aqi_data]);
+                    publishFunc(observerID, [aqi.FormatToMsg(aqi_data)]);
                 }
             });
         }
