@@ -64,8 +64,9 @@ function Scheduler() {
             let task = new SchedulerTask(task_key);
             task.setTime(9, 15); /* Load opening stock price at 09:15 */
             task.func = () => {
-                stock.GetStockInfo(stockID, result => {
-                    yRedis.Set(task_key, result, r => {});
+                stock.GetStockInfo(stockID).then(result => {
+                    if (result !== null)
+                        yRedis.Set(task_key, result, r => {});
                 });
             }
             task_list.push(task);
@@ -105,7 +106,7 @@ function Scheduler() {
                     });
                     return info;
                 }
-                weather.GetOriginData(city_name, 'ThirtySix', records => {
+                weather.GetOriginData(city_name, 'ThirtySix').then(records => {
                     yRedis.Set(task_key, parseRecords(records), r => {});
                 });
             }
@@ -122,9 +123,9 @@ function Scheduler() {
             let task = new SchedulerTask(task_key);
             task.setTime(6, 5); /* Load AQI at 06:05 */
             task.func = () => {
-                aqi.GetAQI(city_name, data => {
+                aqi.GetAQI(city_name).then(data => {
                     yRedis.Set(task_key, aqi.FormatToMsg(data), r => {});
-                });
+                }).catch(err => console.error(err));
             }
             task_list.push(task);
         });

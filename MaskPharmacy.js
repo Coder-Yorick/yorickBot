@@ -5,19 +5,21 @@ const NEARBY_DISTANCE = 80;
 
 function MaskPharmacy() {
 
-    this.QueryAll = function (callback) {
-        request({url:MASK_REALTIME_DATA, json: true}, (error, response, body) => {
-            try {
-                callback(this.formatData(body));
-            } catch (e) {
-                console.log(e.message);
-            }
-        });
+    this.QueryAll = () => {
+        return Promise((resolve, reject) => {
+            request({ url: MASK_REALTIME_DATA, json: true }, (error, response, body) => {
+                try {
+                    resolve(this.formatData(body));
+                } catch (e) {
+                    reject(e.message);
+                }
+            });
+        })
     }
 
-    this.FindNearby = function (lng, lat, callback) {
-        this.QueryAll(pharmacies => {
-            if (pharmacies) {
+    this.FindNearby = function (lng, lat) {
+        return new Promise((resolve, reject) => {
+            this.QueryAll().then(pharmacies => {
                 /* find nearby pharmacies */
                 let nearby_pharmacies = [];
                 pharmacies.forEach(pharmacy => {
@@ -28,7 +30,7 @@ function MaskPharmacy() {
                             /* sort by distance */
                             let idx = 0;
                             for (idx = nearby_pharmacies.length; idx > 0; idx--) {
-                                if (nearby_pharmacies[idx-1].distance < pharmacy.distance) {
+                                if (nearby_pharmacies[idx - 1].distance < pharmacy.distance) {
                                     break;
                                 }
                             }
@@ -38,10 +40,11 @@ function MaskPharmacy() {
                         console.log(e);
                     }
                 });
-                callback(nearby_pharmacies);
-            } else {
-                callback([]);
-            }
+                resolve(nearby_pharmacies);
+            }).catch(err => {
+                console.error(err);
+                resolve([]);
+            });
         });
     }
 }
@@ -75,7 +78,7 @@ MaskPharmacy.prototype.formatData = (jdata) => {
             });
         });
         return pharmacies;
-    } catch(e) {
+    } catch (e) {
         return [];
     }
 }

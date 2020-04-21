@@ -184,7 +184,7 @@ app.listen(SERVER_PORT || 80, function () {
 const InterpretLocation = function (lat, lng, source) {
     /* 附近口罩地圖查詢 */
     let queryMaskOperate = callback => {
-        MaskPharmacy.FindNearby(lng, lat, nearby_pharmacies => {
+        MaskPharmacy.FindNearby(lng, lat).then(nearby_pharmacies => {
             if (nearby_pharmacies.length > 3) {
                 nearby_pharmacies = nearby_pharmacies.slice(0, 3);
             }
@@ -429,9 +429,11 @@ const AQIOperate = function(userid, storage, text, callback) {
         position = text;
     }
     delete GVars.UserStorage[userid];
-    AQI.GetAQI(position, data => {
+    AQI.GetAQI(position).then(data => {
         let msg = AQI.FormatToMsg(data);
-        callback(msg ? msg : '找不到這個地區的資料');
+        callback(msg);
+    }).catch(err => {
+        callback(`找不到這個地區的資料(${err})`);
     });
 }
 
@@ -469,13 +471,17 @@ const WeatherOperate = function (userid, storage, text, callback) {
         /* 功能執行*/
         if (text == 'ThirtySix') {
             delete GVars.UserStorage[userid];
-            Weather.GetThirtySixWeather(position, results => {
+            Weather.GetThirtySixWeather(position).then(results => {
                 callback(results);
+            }).catch(e => {
+                callback(e);
             });
         } else if (text == 'OneWeek') {
             delete GVars.UserStorage[userid];
-            Weather.GetOneWeekWeather(position, results => {
+            Weather.GetOneWeekWeather(position).then(results => {
                 callback(results);
+            }).catch(e => {
+                callback(e);
             });
         } else if (text == 'SubscribeWeatherNotify') {
             /* 訂閱天氣預報通知 */
@@ -505,7 +511,7 @@ const ForexOperate = function (userid, storage, text, callback) {
         /* 查詢幣別資訊*/
         if (storage.type == GConst.USERModeType.QUERY) {
             delete GVars.UserStorage[userid];
-            Forex.GetCurrentForex(text, results => {
+            Forex.GetCurrentForex(text).then(results => {
                 callback(results);
             });
         } else if (storage.type == GConst.USERModeType.QUERY1) {
@@ -532,7 +538,7 @@ const TranslateOperate = function(userid, storage, text, callback) {
         YRedis.GetStr(text, result => {
             if (result == null) {
                 let transKind = Translate.isTWtext(text) ? 'en' : 'zh-TW';
-                Translate.exec(transKind, text, results => {
+                Translate.exec(transKind, text).then(results => {
                     YRedis.Set(text, results, r => console.log(r ? 'set redis success': 'set redis fail'));
                     callback(results);
                 });

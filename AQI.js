@@ -7,17 +7,19 @@ const aqi_option = {
 
 function AQI() {
 
-    this.GetAQI = function(siteName, callback) {
-        rp(aqi_option)
-            .then(repos => {
-                let data = [];
-                for (let i in repos) {
-                    if (repos[i].SiteName == siteName || repos[i].County == siteName)
-                        data.push(repos[i]);
-                }
-                callback(data);
-            })
-            .catch(err => callback(err.message));
+    this.GetAQI = (siteName) => {
+        return new Promise((resolve, reject) => {
+            rp(aqi_option)
+                .then(repos => {
+                    let data = [];
+                    for (let i in repos) {
+                        if (repos[i].SiteName == siteName || repos[i].County == siteName)
+                            data.push(repos[i]);
+                    }
+                    resolve(data);
+                })
+                .catch(err => reject(err.message));
+        });
     }
 
     this.FormatToMsg = function(data) {

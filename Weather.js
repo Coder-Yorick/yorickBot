@@ -15,76 +15,82 @@ const WEATHER_CITIES = [
 
 function Weather() {
 
-    this.GetCountyList = function() {
+    this.GetCountyList = function () {
         return WEATHER_CITIES;
     }
 
-    this.GetOriginData = function(city, method, callback) {
-        if (WEATHER_TW_METHOD.hasOwnProperty(method)) {
+    this.GetOriginData = function (city, method) {
+        return new Promise((resolve, reject) => {
+            if (WEATHER_TW_METHOD.hasOwnProperty(method)) {
+                let propertiesObject = {
+                    Authorization: WEATHER_API_KEY,
+                    format: 'JSON',
+                    locationName: city
+                };
+                request({ url: WEATHER_TW_URL + WEATHER_TW_METHOD[method], qs: propertiesObject }, function (err, response, body) {
+                    try {
+                        if (err)
+                            reject(err);
+                        else {
+                            body = JSON.parse(body);
+                            resolve(weather.ParseThirtySixWeatherInfo(city, body.records, false));
+                        }
+                    } catch (e) {
+                        reject('讀取天氣資料異常\n' + e.message);
+                    }
+                });
+            } else {
+                reject(null);
+            }
+        });
+    }
+
+    this.GetThirtySixWeather = function (city) {
+        return new Promise((resolve, reject) => {
             let propertiesObject = {
                 Authorization: WEATHER_API_KEY,
                 format: 'JSON',
                 locationName: city
             };
-            request({ url: WEATHER_TW_URL + WEATHER_TW_METHOD[method], qs: propertiesObject }, function(err, response, body) {
+            request({ url: WEATHER_TW_URL + WEATHER_TW_METHOD.ThirtySix, qs: propertiesObject }, function (err, response, body) {
                 try {
                     if (err)
-                        callback(err);
+                        reject(err);
                     else {
                         body = JSON.parse(body);
-                        callback(weather.ParseThirtySixWeatherInfo(city, body.records, false));
+                        resolve(weather.ParseThirtySixWeatherInfo(city, body.records));
                     }
                 } catch (e) {
-                    callback('讀取天氣資料異常\n' + e.message);
+                    reject('讀取天氣資料異常\n' + e.message);
                 }
             });
-        } else {
-            callback(null);
-        }
-    }
-
-    this.GetThirtySixWeather = function(city, callback) {
-        let propertiesObject = {
-            Authorization: WEATHER_API_KEY,
-            format: 'JSON',
-            locationName: city
-        };
-        request({ url: WEATHER_TW_URL + WEATHER_TW_METHOD.ThirtySix, qs: propertiesObject }, function(err, response, body) {
-            try {
-                if (err)
-                    callback(err);
-                else {
-                    body = JSON.parse(body);
-                    callback(weather.ParseThirtySixWeatherInfo(city, body.records));
-                }
-            } catch (e) {
-                callback('讀取天氣資料異常\n' + e.message);
-            }
         });
     }
 
-    this.GetOneWeekWeather = function(city, callback) {
-        let propertiesObject = {
-            Authorization: WEATHER_API_KEY,
-            format: 'JSON',
-            locationName: city,
-            elementName: 'WeatherDescription'
-        };
-        request({ url: WEATHER_TW_URL + WEATHER_TW_METHOD.OneWeek, qs: propertiesObject }, function(err, response, body) {
-            try {
-                if (err)
-                    callback(err);
-                else {
-                    body = JSON.parse(body);
-                    callback(weather.ParseOneWeekWeatherInfo(city, body.records));
+    this.GetOneWeekWeather = function (city) {
+        return new Promise((resolve, reject) => {
+            let propertiesObject = {
+                Authorization: WEATHER_API_KEY,
+                format: 'JSON',
+                locationName: city,
+                elementName: 'WeatherDescription'
+            };
+            request({ url: WEATHER_TW_URL + WEATHER_TW_METHOD.OneWeek, qs: propertiesObject }, function (err, response, body) {
+                try {
+                    if (err)
+                        reject(err);
+                    else {
+                        body = JSON.parse(body);
+                        resolve(weather.ParseOneWeekWeatherInfo(city, body.records));
+                    }
+                } catch (e) {
+                    reject('讀取天氣資料異常\n' + e.message);
                 }
-            } catch (e) {
-                callback('讀取天氣資料異常\n' + e.message);
-            }
+            });
         });
     }
 
-    this.ParseThirtySixWeatherInfo = function(city, records, string_info = true) {
+    this.ParseThirtySixWeatherInfo = function (city, records, string_info = true) {
         if (records.hasOwnProperty('location') && records.location.length > 0) {
             for (let i in records.location) {
                 if (city == records.location[i].locationName) {
@@ -104,19 +110,19 @@ function Weather() {
                     for (let w in wElements) {
                         switch (wElements[w].elementName) {
                             case 'PoP':
-                            	wElements[w].time.forEach(pop => {
+                                wElements[w].time.forEach(pop => {
                                     info_map._check(pop);
                                     info_map[pop.startTime].POP = pop.parameter.parameterName * 1;
                                 });
                                 break;
                             case 'MinT':
-                            	wElements[w].time.forEach(mint => {
+                                wElements[w].time.forEach(mint => {
                                     info_map._check(mint);
                                     info_map[mint.startTime].MinT = mint.parameter.parameterName * 1;
                                 });
                                 break;
                             case 'MaxT':
-                            	wElements[w].time.forEach(maxt => {
+                                wElements[w].time.forEach(maxt => {
                                     info_map._check(maxt);
                                     info_map[maxt.startTime].MaxT = maxt.parameter.parameterName * 1;
                                 });
@@ -128,10 +134,10 @@ function Weather() {
                         let info_str = city + '\n' + records.datasetDescription + '\n****************\n';
                         for (let starttime in info_map) {
                             info_str += '日期:' + starttime.slice(0, 10) + '\n';
-                    	    info_str += '時間:' + starttime.slice(11,13) + '時～' + info_map[starttime].EndTime.slice(11,13) + '時\n';
-                    	    info_str += '降雨機率:' + info_map[starttime].POP + '％' + '\n';
-                    	    info_str += '氣溫:' + info_map[starttime].MinT + '℃' + '～' + info_map[starttime].MaxT + '℃' + '\n';
-                    	    info_str += '\n';
+                            info_str += '時間:' + starttime.slice(11, 13) + '時～' + info_map[starttime].EndTime.slice(11, 13) + '時\n';
+                            info_str += '降雨機率:' + info_map[starttime].POP + '％' + '\n';
+                            info_str += '氣溫:' + info_map[starttime].MinT + '℃' + '～' + info_map[starttime].MaxT + '℃' + '\n';
+                            info_str += '\n';
                         }
                         return info_str;
                     } else {
@@ -139,8 +145,8 @@ function Weather() {
                         for (let starttime in info_map) {
                             infoes.push({
                                 date: starttime.slice(0, 10),
-                                startHr: starttime.slice(11,13),
-                                endHr: info_map[starttime].EndTime.slice(11,13),
+                                startHr: starttime.slice(11, 13),
+                                endHr: info_map[starttime].EndTime.slice(11, 13),
                                 pop: info_map[starttime].POP,
                                 minT: info_map[starttime].MinT,
                                 maxT: info_map[starttime].MaxT
@@ -157,7 +163,7 @@ function Weather() {
             return [];
     }
 
-    this.ParseOneWeekWeatherInfo = function(city, records) {
+    this.ParseOneWeekWeatherInfo = function (city, records) {
         if (records.hasOwnProperty('locations') && records.locations.length > 0) {
             let citywdata = records.locations[0].location;
             for (let i in citywdata) {
@@ -167,8 +173,8 @@ function Weather() {
                     for (let w in wElements) {
                         if (wElements[w].elementName == 'WeatherDescription') {
                             wElements[w].time.forEach(wd => {
-                                if (wd.startTime.slice(0,10) == wd.endTime.slice(0,10) && wd.elementValue.length > 0)
-                                    info_str += '[' + wd.startTime.slice(0,10) + ']\n' + wd.elementValue[0].value + '\n\n';
+                                if (wd.startTime.slice(0, 10) == wd.endTime.slice(0, 10) && wd.elementValue.length > 0)
+                                    info_str += '[' + wd.startTime.slice(0, 10) + ']\n' + wd.elementValue[0].value + '\n\n';
                             });
                         }
                     }
