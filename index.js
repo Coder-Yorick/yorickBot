@@ -161,6 +161,9 @@ app.listen(SERVER_PORT || 80, function () {
                     Scheduler.addStockTask(YRedis, publisher, GConst.TESTERIDS[2], '0056');
                     Scheduler.addStockTask(YRedis, publisher, GConst.TESTERIDS[2], '0050');
                     Scheduler.addStockTask(YRedis, publisher, GConst.TESTERIDS[2], '5880');
+                    Scheduler.addStockTask(YRedis, publisher, GConst.TESTERIDS[0], '5880', 12, 0);
+                    Scheduler.addStockTask(YRedis, publisher, GConst.TESTERIDS[0], '2520', 12, 0);
+                    Scheduler.addStockTask(YRedis, publisher, GConst.TESTERIDS[0], '2545', 12, 0);
                     /* default AQI observer tasks */
                     Scheduler.addAQITask(YRedis, publisher, GConst.DEVELOPERID, '臺北市');
                     Scheduler.addAQITask(YRedis, publisher, GConst.TESTERIDS[0], '宜蘭縣');
