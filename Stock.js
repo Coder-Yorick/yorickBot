@@ -46,7 +46,7 @@ function Stock() {
                         resolve({
                             name: stock_allName,
                             price: $stock_table.eq(2).find('td').eq(0).html() * 1,
-                            spread: $stock_table.eq(2).find('td').eq(1).html() * 1,
+                            spread: $stock_table.eq(2).find('td').eq(2).html() * 1,
                             dividend: dividend_rate
                         });
                     } else {
