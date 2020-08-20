@@ -321,6 +321,20 @@ const InterpretMessage = function (text, source) {
         let utcTime = `${now.getUTCHours()}:${now.getUTCMinutes()}`;
         let localTime = `${now.getHours()}:${now.getMinutes()}`;
         return callback => callback(`UTC: ${utcTime}\nLocal: ${localTime}`);
+    } else if (text.indexOf('股票') == 0) {
+        /* 查詢股票資訊 */
+        try {
+            let stockID = text.replace('股票', '');
+            return callback => Stock.GetStockInfo(stockID).then(stockInfo => {
+                if (stockInfo) {
+                    let msg = `${stockInfo.name}\n`;
+                    msg += `現價: ${stockInfo.price}\n`;
+                    msg += `漲跌: ${stockInfo.spread}`;
+                    callback(msg);
+                }
+            });
+        } catch {
+        }
     } else if (GVars.UserStorage.hasOwnProperty(userID)) {
         /* 功能模式已啟動*/
         return callback => MenuFunction(userID, text, callback);
