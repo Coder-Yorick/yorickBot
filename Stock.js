@@ -6,7 +6,40 @@ const STOCK_WEBSITE = 'http://goodinfo.tw/StockInfo/StockDividendPolicy.asp?STOC
 const STOCK_TWSE = 'http://mis.twse.com.tw/stock/api/getStockInfo.jsp';
 const DIVIDEND_WEBSITE = 'https://www.moneydj.com/Z/ZG/ZGL/ZGL.djhtm';
 
+const MY_TWSE = 'http://twse:5000'
+
 function Stock() {
+
+    this.RecordTWSETask = (stockID, callback) => {
+        request({
+            uri: `${MY_TWSE}/record/${stockID}`,
+            method: 'POST'
+        }, function (err, response, body) {
+            try {
+                body = JSON.parse(body);
+                callback(response.statusCode == 200 && body && body.result);
+            } catch(e) {
+                console.err(e);
+                callback(false);
+            }
+        });
+    }
+
+    this.GetRecordTWSE = (stockID, callback) => {
+        request({
+            uri: `${MY_TWSE}/record/${stockID}`,
+            method: 'GET'
+        }, function (err, response, body) {
+            try {
+                body = JSON.parse(body);
+                if (response.statusCode == 200 && body && body.result) {
+                    callback(body.result);
+                }
+            } catch(e) {
+                console.err(e);
+            }
+        });
+    }
 
     this.QueryStockName = function (stockID) {
         return new Promise((resolve, reject) => {
