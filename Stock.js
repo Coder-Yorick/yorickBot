@@ -32,7 +32,7 @@ function Stock() {
             MY_TWSE_BASE_REQ(`/record/${stockID}`, 'GET', callback);
         },
         ListStore: callback => {
-            MY_TWSE_BASE_REQ(`/storec/support`, 'GET', callback, []);
+            MY_TWSE_BASE_REQ(`/store/support`, 'GET', callback, []);
         },
         CheckStore: (stockID, callback) => {
             MY_TWSE_BASE_REQ(`/store/check/${stockID}`, 'GET', callback, false);
