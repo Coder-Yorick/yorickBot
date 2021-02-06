@@ -8,37 +8,55 @@ const DIVIDEND_WEBSITE = 'https://www.moneydj.com/Z/ZG/ZGL/ZGL.djhtm';
 
 const MY_TWSE = 'http://twse:5000'
 
+const MY_TWSE_BASE_REQ = (route, method, callback, errResult = null) => {
+    request({
+        uri: `${MY_TWSE}${route}`,
+        method: method
+    }, function (err, response, body) {
+        try {
+            body = JSON.parse(body);
+            callback(response.statusCode == 200 && body && body.result);
+        } catch(e) {
+            console.err(e);
+            callback(errResult);
+        }
+    });
+}
+
 function Stock() {
-
-    this.RecordTWSETask = (stockID, callback) => {
-        request({
-            uri: `${MY_TWSE}/record/${stockID}`,
-            method: 'POST'
-        }, function (err, response, body) {
-            try {
-                body = JSON.parse(body);
-                callback(response.statusCode == 200 && body && body.result);
-            } catch(e) {
-                console.err(e);
-                callback(false);
-            }
-        });
-    }
-
-    this.GetRecordTWSE = (stockID, callback) => {
-        request({
-            uri: `${MY_TWSE}/record/${stockID}`,
-            method: 'GET'
-        }, function (err, response, body) {
-            try {
-                body = JSON.parse(body);
-                if (response.statusCode == 200 && body && body.result) {
-                    callback(body.result);
+    this.TWSE = {
+        RecordTask: (stockID, callback) => {
+            MY_TWSE_BASE_REQ(`/record/${stockID}`, 'POST', callback, false);
+        },
+        GetRecord: (stockID, callback) => {
+            MY_TWSE_BASE_REQ(`/record/${stockID}`, 'GET', callback);
+        },
+        ListStore: callback => {
+            MY_TWSE_BASE_REQ(`/storec/support`, 'GET', callback, []);
+        },
+        CheckStore: (stockID, callback) => {
+            MY_TWSE_BASE_REQ(`/store/check/${stockID}`, 'GET', callback, false);
+        },
+        CheckTask: callback => {
+            MY_TWSE_BASE_REQ(`/task/size`, 'GET', callback, -1);
+        },
+        JudgeScore: score => {
+            if (score != "") {
+                const _score = score * 1.0;
+                if (_score >= 7) { // 7~10
+                    return String.fromCodePoint(0x1000A4);
+                } else if (_score >= 4) { // 4~6
+                    return String.fromCodePoint(0x10008B);
+                } else if (_score >= 2) { // 2~3
+                    return String.fromCodePoint(0x100090);
+                } else if (_score >= 0) { // 0~1
+                    return String.fromCodePoint(0x1000A3);
+                } else { // 低於0分
+                    return String.fromCodePoint(0x1000A2);
                 }
-            } catch(e) {
-                console.err(e);
             }
-        });
+            return '';
+        },
     }
 
     this.QueryStockName = function (stockID) {

@@ -334,33 +334,47 @@ const InterpretMessage = function (text, source) {
             });
         } catch {
         }
-    } else if (text.indexOf('twse') == 0) {
+    } else if (text.toUpperCase().indexOf('TWSE') == 0) {
         /* twse */
         try {
-            let stockID = text.replace('twse', '');
-            if (stockID.indexOf('r') == 0) {
-                // record
-                stockID = stockID.substr(1)
-                return callback => Stock.RecordTWSETask(stockID, result => {
-                    callback(`紀錄${stockID} ${result ? '成功': '失敗'}`);
-                });
-            } else {
-                // get record
-                return callback => Stock.GetRecordTWSE(stockID, result => {
-                    if (result) {
-                        let msg = [];
-                        msg.push(`${stockID}(${result.date})`);
-                        msg.push(`收盤價:${result.price}`);
-                        msg.push(`買超異常:${result.ob_rate}`);
-                        msg.push(`籌碼集中度:${result.scr}`);
-                        msg.push(`漲跌:${result.price_gap}`);
-                        msg.push(`家數差:${result.broker_gap}`);
-                        msg.push(`評分:${result.score}/10`);
-                        callback(msg.join('\n'));
-                    } else {
-                        callback(`${stockID}查詢失敗`)
-                    }
-                });
+            let stockID = text.toUpperCase().replace('TWSE', '');
+            const cmd = stockID.length > 0 ? stockID[0].toUpperCase() : ''
+            switch (cmd) {
+                case 'R': // record
+                    stockID = stockID.substr(1)
+                    return callback => Stock.TWSE.RecordTask(stockID, result => {
+                        callback(`紀錄${stockID}任務啟動 ${result ? '成功': '失敗'}`);
+                    });
+                case 'L': // list all
+                    return callback => Stock.TWSE.ListStore(result => {
+                        callback(`有記錄的股票列表\n${result.join('\n')}`);
+                    });
+                case 'C': // check store
+                    stockID = stockID.substr(1)
+                    return callback => Stock.TWSE.CheckStore(stockID, result => {
+                        callback(`${stockID}紀錄表 ${result ? 'Ready': 'Not Ready'}`);
+                    });
+                case 'T': // check task
+                    return callback => Stock.TWSE.CheckTask(result => {
+                        callback(`待執行任務數 ${result}`);
+                    });
+                default: // get record
+                    return callback => Stock.TWSE.GetRecord(stockID, result => {
+                        if (result) {
+                            let msg = [];
+                            msg.push(`${result.date}`);
+                            msg.push(`===${stockID}===`);
+                            msg.push(`收盤價: ${result.price}`);
+                            msg.push(`買超異常: ${result.ob_rate}`);
+                            msg.push(`籌碼集中度: ${result.scr}`);
+                            msg.push(`漲跌: ${result.price_gap}`);
+                            msg.push(`家數差: ${result.broker_gap}`);
+                            msg.push(`評分: ${result.score}/10 ${Stock.TWSE.JudgeScore(result.score)}`);
+                            callback(msg.join('\n'));
+                        } else {
+                            callback(`${stockID}查詢失敗`)
+                        }
+                    });
             }
         } catch {
         }
