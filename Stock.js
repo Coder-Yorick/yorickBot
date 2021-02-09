@@ -15,7 +15,7 @@ const MY_TWSE_BASE_REQ = (route, method, callback, errResult = null) => {
     }, function (err, response, body) {
         try {
             body = JSON.parse(body);
-            callback(response.statusCode == 200 && body && body.result);
+            callback(response.statusCode == 200 && body ? body.result : errResult);
         } catch(e) {
             console.err(e);
             callback(errResult);
